@@ -1,8 +1,6 @@
 package com.ffkit.lite
 
 import android.content.Context
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -126,19 +124,8 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Text("volume- 3x = PANIC", color = Neon.dim)
 }
 
-@Composable private fun GameTab(ctx: Context) {
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { VA.installFromUri(ctx, it) }
-    }
-    Column {
-        Button(onClick = { picker.launch(arrayOf("application/vnd.android.package-archive","*/*")) }) {
-            Text(if (VA.isInstalled()) "atualizar APK do Free Fire" else "importar APK do Free Fire")
-        }
-        Spacer(Modifier.height(8.dp))
-        Button(onClick = { VA.launch(ctx) }, enabled = VA.isInstalled()) {
-            Text("abrir Free Fire")
-        }
-    }
+@Composable private fun GameTab(ctx: Context) = Column {
+    Text("rota VA desativada (stubs). Use CV ou LSPatch.", color = Neon.dim)
 }
 
 @Composable private fun SwitchRow(label: String, value: Boolean, onChange: (Boolean) -> Unit) {

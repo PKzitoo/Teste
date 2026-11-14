@@ -57,19 +57,25 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun PanelLauncher() {
+        var msg by remember { mutableStateOf("carregando...") }
         LaunchedEffect(Unit) {
-            if (!Settings.canDrawOverlays(this@MainActivity)) {
-                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")))
-            } else {
+            try {
+                if (!Settings.canDrawOverlays(this@MainActivity)) {
+                    msg = "preciso da permissao 'aparecer sobre outros apps'. Volte, conceda em Ajustes -> Apps -> Calculadora -> Permissoes, e abra a Calculadora de novo."
+                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")))
+                    return@LaunchedEffect
+                }
                 StateBridge.appCtx = applicationContext
-                StateManager.save(applicationContext)  // garante state.json inicial
+                try { StateManager.save(applicationContext) } catch (_: Throwable) {}
                 OverlayController.ensure(applicationContext)
                 OverlayController.show()
                 OverlayController.openPanel()
                 finish()
+            } catch (t: Throwable) {
+                msg = "erro ao abrir painel: ${t.javaClass.simpleName}: ${t.message}"
             }
         }
-        Text("carregando...")
+        Text(msg)
     }
 }

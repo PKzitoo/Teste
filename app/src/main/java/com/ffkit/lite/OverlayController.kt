@@ -3,6 +3,7 @@ package com.ffkit.lite
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Bundle
 import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.material3.FloatingActionButton
@@ -10,6 +11,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
 /**
  * Singleton — gerencia bolha + painel flutuante.
@@ -30,12 +42,26 @@ object OverlayController {
         }
     }
 
+    private val lifecycleOwner = object : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
+        private val reg = LifecycleRegistry(this).apply { currentState = Lifecycle.State.RESUMED }
+        private val vms = ViewModelStore()
+        private val ssr = SavedStateRegistryController.create(this).also { it.performRestore(null) }
+        override val lifecycle: Lifecycle get() = reg
+        override val viewModelStore: ViewModelStore get() = vms
+        override val savedStateRegistry: SavedStateRegistry get() = ssr.savedStateRegistry
+    }
+
     fun show() {
         if (view != null) return
         val c = ctxRef ?: return
-        val cv = ComposeView(c).apply {
-            setContent { if (bubble.value) Bubble() else Panel(c) { bubble.value = true } }
-        }
+        val cv = try {
+            ComposeView(c).apply {
+                setViewTreeLifecycleOwner(lifecycleOwner)
+                setViewTreeViewModelStoreOwner(lifecycleOwner)
+                setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+                setContent { if (bubble.value) Bubble() else Panel(c) { bubble.value = true } }
+            }
+        } catch (t: Throwable) { return }
         val lp = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -46,8 +72,7 @@ object OverlayController {
                 (if (StateBridge.flagSecure) WindowManager.LayoutParams.FLAG_SECURE else 0),
             PixelFormat.TRANSLUCENT
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
-        wm?.addView(cv, lp)
-        view = cv
+        try { wm?.addView(cv, lp); view = cv } catch (_: Throwable) {}
     }
 
     fun hide() {
