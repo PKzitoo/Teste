@@ -106,21 +106,35 @@ object OverlayController {
     private fun makeDragListener(cv: View, lpLocal: WindowManager.LayoutParams,
                                  host: FrameLayout): View.OnTouchListener {
         var sx = 0; var sy = 0; var tx = 0f; var ty = 0f
-        return View.OnTouchListener { _, ev ->
+        var dragging = false
+        val slopPx = (8 * (hostView?.context?.resources?.displayMetrics?.density ?: 3f)).toInt()
+        return View.OnTouchListener { v, ev ->
             when (ev.action) {
                 MotionEvent.ACTION_DOWN -> {
                     sx = lpLocal.x; sy = lpLocal.y
-                    tx = ev.rawX; ty = ev.rawY; true
+                    tx = ev.rawX; ty = ev.rawY
+                    dragging = false
+                    // NAO consome ainda — deixa Compose receber o DOWN
+                    false
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = ev.rawX - tx
                     val dy = ev.rawY - ty
+                    if (!dragging) {
+                        if (dx * dx + dy * dy > slopPx * slopPx) {
+                            dragging = true
+                        } else return@OnTouchListener false
+                    }
                     lpLocal.x = sx + dx.toInt()
                     lpLocal.y = sy + dy.toInt()
                     try { wm?.updateViewLayout(host, lpLocal) } catch (_: Throwable) {}
                     true
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    val wasDragging = dragging
+                    dragging = false
+                    wasDragging  // so consome o UP se realmente arrastou
+                }
                 else -> false
             }
         }

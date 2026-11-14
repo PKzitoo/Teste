@@ -131,7 +131,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
-        Modifier.weight(1f).heightIn(min = 220.dp, max = 360.dp)
+        Modifier.weight(1f).heightIn(max = 380.dp)
             .background(Neon.panel)
             .padding(horizontal = 7.dp, vertical = 7.dp)
             .verticalScroll(rememberScrollState()),
