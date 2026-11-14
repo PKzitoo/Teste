@@ -8,6 +8,13 @@ object StateBridge {
     var aimFov        = 80f;   set(v) { field = v; setF("aim_fov", v) }
     var aimSmooth     = 5f;    set(v) { field = v; setF("aim_smooth", v) }
     var aimBone       = 0;     set(v) { field = v; setI("aim_bone", v) }
+    // comportamentais (anti-ban behavioral)
+    var aimMissRate   = 0.30f; set(v) { field = v; setF("aim_miss_rate", v) }
+    var aimBoneRandom = true;  set(v) { field = v; setB("aim_bone_random", v) }
+    var aimReactionMs = 200;   set(v) { field = v; setI("aim_reaction_ms", v) }
+    var aimKpmCap     = 8;     set(v) { field = v; setI("aim_kpm_cap", v) }
+    var aimMaxHsStreak= 3;     set(v) { field = v; setI("aim_max_hs_streak", v) }
+
     var noRecoil      = true;  set(v) { field = v; setB("no_recoil", v) }
     var speedHack     = false; set(v) { field = v; setB("speed_hack", v) }
     var flagSecure    = true;  set(v) { field = v; setB("flag_secure", v) }

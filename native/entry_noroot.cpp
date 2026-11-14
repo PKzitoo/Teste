@@ -42,19 +42,24 @@ Java_com_ffkit_lite_StateBridge_setB(JNIEnv* env, jclass, jstring jk, jboolean v
     else if (key == "no_recoil")       g_state.no_recoil = v;
     else if (key == "speed_hack")      g_state.speed_hack = v;
     else if (key == "flag_secure")     g_state.flag_secure = v;
+    else if (key == "aim_bone_random") g_state.aim_bone_random = v;
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_ffkit_lite_StateBridge_setF(JNIEnv* env, jclass, jstring jk, jfloat v) {
     const char* k = env->GetStringUTFChars(jk, nullptr);
     std::string key = k; env->ReleaseStringUTFChars(jk, k);
-    if      (key == "aim_fov")    g_state.aim_fov = v;
-    else if (key == "aim_smooth") g_state.aim_smooth = v;
+    if      (key == "aim_fov")       g_state.aim_fov = v;
+    else if (key == "aim_smooth")    g_state.aim_smooth = v;
+    else if (key == "aim_miss_rate") g_state.aim_miss_rate = v;
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_ffkit_lite_StateBridge_setI(JNIEnv* env, jclass, jstring jk, jint v) {
     const char* k = env->GetStringUTFChars(jk, nullptr);
     std::string key = k; env->ReleaseStringUTFChars(jk, k);
-    if (key == "aim_bone") g_state.aim_bone = v;
+    if      (key == "aim_bone")           g_state.aim_bone = v;
+    else if (key == "aim_reaction_ms")    g_state.aim_reaction_ms = v;
+    else if (key == "aim_kpm_cap")        g_state.aim_kpm_cap = v;
+    else if (key == "aim_max_hs_streak")  g_state.aim_max_hs_streak = v;
 }

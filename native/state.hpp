@@ -11,6 +11,12 @@ struct State {
     std::atomic<float> aim_fov         {80.f};
     std::atomic<float> aim_smooth      {5.f};
     std::atomic<int>   aim_bone        {0};
+    // comportamento humano (reduz ban via telemetria behavioral)
+    std::atomic<float> aim_miss_rate       {0.30f};  // 0..0.5 — % tiros errados
+    std::atomic<bool>  aim_bone_random     {true};   // sorteia osso a cada tick
+    std::atomic<int>   aim_reaction_ms     {200};    // atraso 100..500 ms
+    std::atomic<int>   aim_kpm_cap         {8};      // kills/min cap (0=off)
+    std::atomic<int>   aim_max_hs_streak   {3};      // forca peito apos N HS
     std::atomic<bool>  no_recoil       {true};
     std::atomic<bool>  no_spread       {false};
     std::atomic<bool>  fast_fire       {false};

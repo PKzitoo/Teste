@@ -171,6 +171,10 @@ static void scanPlayers() {
 extern void tick_features();
 extern "C" void injectCameraDelta(float, float);
 
+static std::chrono::steady_clock::time_point g_last_switch;
+static void* g_prev_target = nullptr;
+static int g_hs_streak = 0;
+
 static void aimTick(float cx, float cy, bool scoping, bool firing) {
     if (!g_state.aim_enabled) return;
     if (g_state.aim_on_scope && !scoping) return;
@@ -186,7 +190,48 @@ static void aimTick(float cx, float cy, bool scoping, bool firing) {
         if (d < bestD) { bestD = d; best = &e; }
     }
     if (!best) return;
-    Vec2 tgt = best->bones2d[0];
+
+    // atraso de reacao: ao trocar de alvo, aguarda aim_reaction_ms
+    auto now = std::chrono::steady_clock::now();
+    if (best != g_prev_target) {
+        g_last_switch = now;
+        g_prev_target = best;
+        return;
+    }
+    auto since = std::chrono::duration_cast<std::chrono::milliseconds>
+                 (now - g_last_switch).count();
+    if (since < g_state.aim_reaction_ms.load()) return;
+
+    // osso: fixo ou aleatorio. tambem respeita max_hs_streak.
+    int bone = g_state.aim_bone.load();
+    if (g_state.aim_bone_random) {
+        static thread_local uint32_t rng = 0x1234abcd;
+        rng = rng * 1664525 + 1013904223;
+        int roll = rng % 100;
+        if      (roll < 25) bone = 0;   // cabeca
+        else if (roll < 45) bone = 1;   // pescoco
+        else                bone = 2;   // peito/ombros
+    }
+    int cap = g_state.aim_max_hs_streak.load();
+    if (cap > 0 && g_hs_streak >= cap) bone = 2;  // forca peito
+
+    Vec2 tgt = best->bones2d[bone < 11 ? bone : 0];
+
+    // taxa de erro: random < miss_rate -> espalha o alvo
+    static thread_local uint32_t mrng = 0xdeadbeef;
+    mrng = mrng * 1664525 + 1013904223;
+    float r = (mrng % 10000) / 10000.0f;
+    if (r < g_state.aim_miss_rate.load()) {
+        float off = 40.f + (mrng % 60);        // 40-100 px de desvio
+        float ang = (float)((mrng >> 8) % 360) * 0.0174533f;
+        tgt.x += std::cos(ang) * off;
+        tgt.y += std::sin(ang) * off;
+    } else if (bone == 0) {
+        g_hs_streak++;  // conta HS real
+    } else {
+        g_hs_streak = 0;
+    }
+
     float sm = std::max(1.f, g_state.aim_smooth.load());
     injectCameraDelta((tgt.x - cx) / sm, (tgt.y - cy) / sm);
 }

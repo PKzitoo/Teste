@@ -62,15 +62,33 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 }
 
 @Composable private fun CombatTab() {
-    var fov = remember { mutableStateOf(StateBridge.aimFov) }
-    var sm  = remember { mutableStateOf(StateBridge.aimSmooth) }
+    val fov   = remember { mutableStateOf(StateBridge.aimFov) }
+    val sm    = remember { mutableStateOf(StateBridge.aimSmooth) }
+    val miss  = remember { mutableStateOf(StateBridge.aimMissRate) }
+    val react = remember { mutableStateOf(StateBridge.aimReactionMs.toFloat()) }
+    val streak= remember { mutableStateOf(StateBridge.aimMaxHsStreak.toFloat()) }
     Column {
+        Text("— AIM —", color = Neon.accent)
         SwitchRow("aimbot",       StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
         SwitchRow("so mirando",   StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
         SwitchRow("so atirando",  StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
         SwitchRow("ignorar bots", StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
-        SliderRow("fov", 30f..300f, fov.value) { fov.value = it; StateBridge.aimFov = it }
-        SliderRow("suavidade", 1f..10f, sm.value) { sm.value = it; StateBridge.aimSmooth = it }
+        SliderRow("fov",       30f..300f, fov.value)  { fov.value = it; StateBridge.aimFov = it }
+        SliderRow("suavidade", 1f..10f,   sm.value)   { sm.value = it; StateBridge.aimSmooth = it }
+        Spacer(Modifier.height(6.dp))
+        Text("— COMPORTAMENTO (anti-ban) —", color = Neon.accent2)
+        SwitchRow("osso aleatorio",  StateBridge.aimBoneRandom){ StateBridge.aimBoneRandom = it }
+        SliderRow("taxa de erro %",      0f..50f, miss.value * 100f) {
+            miss.value = it / 100f; StateBridge.aimMissRate = miss.value
+        }
+        SliderRow("atraso reacao (ms)", 50f..500f, react.value) {
+            react.value = it; StateBridge.aimReactionMs = it.toInt()
+        }
+        SliderRow("cap HS consec.",     0f..10f,  streak.value) {
+            streak.value = it; StateBridge.aimMaxHsStreak = it.toInt()
+        }
+        Spacer(Modifier.height(6.dp))
+        Text("— OUTROS —", color = Neon.accent3)
         SwitchRow("sem recoil",   StateBridge.noRecoil)      { StateBridge.noRecoil = it }
     }
 }
