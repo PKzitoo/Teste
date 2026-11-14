@@ -88,7 +88,12 @@ object OverlayController {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeViewModelStoreOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
-            addView(cv)
+            // IMPORTANTE: addView sem params usa MATCH_PARENT, que estica
+            // o painel/bolinha pra ocupar o parent todo. Forca WRAP_CONTENT.
+            addView(cv, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ))
         }
 
         val lpLocal = WindowManager.LayoutParams(
@@ -115,9 +120,11 @@ object OverlayController {
 
     private fun dragHandleParamsForMode(c: Context): FrameLayout.LayoutParams =
         if (bubble.value)
-            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                                     FrameLayout.LayoutParams.MATCH_PARENT)
+            // MESMO tamanho que a bolinha (48dp). NAO usar MATCH_PARENT
+            // ou vira capsula gigante esticando o host.
+            FrameLayout.LayoutParams(dpToPx(c, 48), dpToPx(c, 48))
         else
+            // barra de titulo do painel: cobre toda largura, 32dp alto
             FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
                                      dpToPx(c, 32))
 

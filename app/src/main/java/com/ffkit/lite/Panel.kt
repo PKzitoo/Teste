@@ -33,9 +33,9 @@ import androidx.compose.ui.unit.sp
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
     Surface(
-        modifier = Modifier.width(250.dp),
+        modifier = Modifier.width(220.dp),
         color = Neon.bg,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, Neon.stroke),
     ) {
         Column {
@@ -93,10 +93,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Sidebar(selected: Int, onSelect: (Int) -> Unit) {
     val items = listOf("A" to "AIM", "M" to "MISC", "S" to "SYS")
     Column(
-        Modifier.width(44.dp).fillMaxHeight()
+        Modifier.width(38.dp)
             .background(Neon.sidebar)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(vertical = 5.dp, horizontal = 3.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items.forEachIndexed { i, (icon, label) ->
@@ -110,23 +110,22 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     val bg = if (selected) Neon.accent else Neon.glass
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(36.dp)
+        modifier = Modifier.width(32.dp)
     ) {
         Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(7.dp))
+            Modifier.size(32.dp).clip(RoundedCornerShape(6.dp))
                 .background(bg)
                 .border(1.dp,
                     if (selected) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
-                    RoundedCornerShape(7.dp))
+                    RoundedCornerShape(6.dp))
                 .clickable { try { onClick() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text(icon, color = Color.White, fontSize = 14.sp,
+            Text(icon, color = Color.White, fontSize = 12.sp,
                 fontWeight = FontWeight.Black)
         }
-        Spacer(Modifier.height(2.dp))
         Text(label, color = if (selected) Neon.accent3 else Neon.dim,
-            fontSize = 7.sp, fontWeight = FontWeight.Bold)
+            fontSize = 6.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -134,11 +133,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
-        Modifier.weight(1f).heightIn(max = 380.dp)
+        Modifier.weight(1f).heightIn(max = 320.dp)
             .background(Neon.panel)
-            .padding(horizontal = 7.dp, vertical = 7.dp)
+            .padding(horizontal = 5.dp, vertical = 5.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         when (tab) {
             0 -> AimTab()
@@ -324,29 +323,29 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Footer() {
     Row(
         Modifier.fillMaxWidth().background(Neon.sidebar)
-            .padding(horizontal = 8.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(horizontal = 6.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Box(
-            Modifier.weight(1f).heightIn(min = 30.dp)
-                .clip(RoundedCornerShape(6.dp))
+            Modifier.weight(1f).heightIn(min = 26.dp)
+                .clip(RoundedCornerShape(5.dp))
                 .background(Neon.danger)
                 .clickable { try {
                     StateBridge.panic(); OverlayController.hide()
                 } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("PANIC", color = Color.White, fontSize = 11.sp,
+            Text("PANIC", color = Color.White, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold)
         }
         Box(
-            Modifier.weight(1f).heightIn(min = 30.dp)
-                .clip(RoundedCornerShape(6.dp))
+            Modifier.weight(1f).heightIn(min = 26.dp)
+                .clip(RoundedCornerShape(5.dp))
                 .background(Neon.accent2)
                 .clickable { try { OverlayController.hide() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("HIDE", color = Color.White, fontSize = 11.sp,
+            Text("HIDE", color = Color.White, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold)
         }
     }
@@ -357,14 +356,14 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(7.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(Neon.glass)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.4f), RoundedCornerShape(7.dp))
-            .padding(horizontal = 9.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+            .border(1.dp, Neon.stroke.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 7.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(title, color = Neon.accent3, fontSize = 9.sp,
-            fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
+            fontWeight = FontWeight.Black, letterSpacing = 1.1.sp)
         content()
     }
 }
