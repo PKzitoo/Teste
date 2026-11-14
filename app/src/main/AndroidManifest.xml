@@ -15,6 +15,13 @@
         android:icon="@android:drawable/ic_menu_edit"
         android:theme="@style/Theme.FFKit">
 
+        <meta-data android:name="xposedmodule"     android:value="true"/>
+        <meta-data android:name="xposeddescription"
+                   android:value="ffkit — injeta libffkit no FF dentro do VirtualXposed"/>
+        <meta-data android:name="xposedminversion" android:value="53"/>
+        <meta-data android:name="xposedscope"
+                   android:resource="@array/xposed_scope"/>
+
         <activity android:name=".MainActivity"
                   android:exported="true"
                   android:excludeFromRecents="true"

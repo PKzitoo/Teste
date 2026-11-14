@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="xposed_scope">
+        <item>com.dts.freefireth</item>
+        <item>com.dts.freefiremax</item>
+    </string-array>
+</resources>
