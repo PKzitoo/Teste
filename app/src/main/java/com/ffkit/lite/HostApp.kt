@@ -11,6 +11,7 @@ class HostApp : Application() {
     }
     override fun onCreate() {
         super.onCreate()
+        StateBridge.appCtx = this  // habilita IPC: toggle -> state.json
         try { VirtualCore.get().setComponentDelegate(FFComponentDelegate()) } catch (_: Throwable) {}
     }
 }

@@ -52,11 +52,14 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                 Button(onClick = onMinimize) { Text("minimizar") }
-                Button(onClick = { StateBridge.panic() },
+                Button(onClick = { OverlayController.hide() }) { Text("esconder") }
+                Button(onClick = { StateBridge.panic(); OverlayController.hide() },
                     colors = ButtonDefaults.buttonColors(containerColor = Neon.danger)) {
                     Text("PANIC")
                 }
             }
+            Text("VOL+ 3x reabre a bolha  •  VOL- 3x PANIC",
+                color = Neon.dim)
         }
     }
 }

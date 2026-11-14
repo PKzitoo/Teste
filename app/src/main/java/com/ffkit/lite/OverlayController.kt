@@ -11,15 +11,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 
-class OverlayController(private val ctx: Context) {
-    private val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+/**
+ * Singleton — gerencia bolha + painel flutuante.
+ * MainActivity chama ensure(ctx)+show() quando o PIN entra.
+ * Botao "esconder bolha" chama hide(); PanicService (VOL+ 3x)
+ * chama toggle(). PANIC (VOL- 3x) chama hideFully().
+ */
+object OverlayController {
+    private var wm: WindowManager? = null
     private var view: ComposeView? = null
+    private var ctxRef: Context? = null
     private val bubble = mutableStateOf(true)
+
+    fun ensure(ctx: Context) {
+        if (ctxRef == null) {
+            ctxRef = ctx.applicationContext
+            wm = ctxRef!!.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        }
+    }
 
     fun show() {
         if (view != null) return
-        val cv = ComposeView(ctx).apply {
-            setContent { if (bubble.value) Bubble() else Panel(ctx) { bubble.value = true } }
+        val c = ctxRef ?: return
+        val cv = ComposeView(c).apply {
+            setContent { if (bubble.value) Bubble() else Panel(c) { bubble.value = true } }
         }
         val lp = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -31,9 +46,19 @@ class OverlayController(private val ctx: Context) {
                 (if (StateBridge.flagSecure) WindowManager.LayoutParams.FLAG_SECURE else 0),
             PixelFormat.TRANSLUCENT
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
-        wm.addView(cv, lp)
+        wm?.addView(cv, lp)
         view = cv
     }
+
+    fun hide() {
+        view?.let { wm?.removeView(it) }
+        view = null
+    }
+
+    fun toggle() { if (view == null) show() else hide() }
+
+    fun openPanel() { bubble.value = false; if (view == null) show() }
+    fun minimize() { bubble.value = true }
 
     @Composable
     private fun Bubble() {

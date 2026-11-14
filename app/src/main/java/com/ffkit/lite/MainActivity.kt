@@ -55,7 +55,11 @@ class MainActivity : ComponentActivity() {
                 startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:$packageName")))
             } else {
-                OverlayController(applicationContext).show()
+                StateBridge.appCtx = applicationContext
+                StateManager.save(applicationContext)  // garante state.json inicial
+                OverlayController.ensure(applicationContext)
+                OverlayController.show()
+                OverlayController.openPanel()
                 finish()
             }
         }
