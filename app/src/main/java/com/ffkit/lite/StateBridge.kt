@@ -27,9 +27,19 @@ object StateBridge {
     var speedHack     = false; set(v) { field = v; setB("speed_hack", v);      flush() }
     var flagSecure    = true;  set(v) { field = v; setB("flag_secure", v);     flush() }
 
-    fun panic() = NativeBridge.panic()
+    fun panic() { try { NativeBridge.panic() } catch (_: Throwable) {} }
 
-    @JvmStatic external fun setB(k: String, v: Boolean)
-    @JvmStatic external fun setF(k: String, v: Float)
-    @JvmStatic external fun setI(k: String, v: Int)
+    // os setters nativos so funcionam dentro do FF (quando libffkit
+    // esta carregada via LSPatch). Na Calculadora pura (modo CV),
+    // a libffkit NAO esta carregada — sem try/catch, qualquer slider
+    // crasha com UnsatisfiedLinkError. O estado "real" vive nas
+    // properties Kotlin + state.json (IPC); as chamadas JNI sao
+    // redundantes locais pra quando esta dentro do FF.
+    @JvmStatic fun setB(k: String, v: Boolean) { try { setBNative(k, v) } catch (_: Throwable) {} }
+    @JvmStatic fun setF(k: String, v: Float)   { try { setFNative(k, v) } catch (_: Throwable) {} }
+    @JvmStatic fun setI(k: String, v: Int)     { try { setINative(k, v) } catch (_: Throwable) {} }
+
+    @JvmStatic external fun setBNative(k: String, v: Boolean)
+    @JvmStatic external fun setFNative(k: String, v: Float)
+    @JvmStatic external fun setINative(k: String, v: Int)
 }

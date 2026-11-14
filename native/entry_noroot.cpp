@@ -32,7 +32,7 @@ Java_com_ffkit_lite_NativeBridge_panic(JNIEnv*, jclass) {
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_ffkit_lite_StateBridge_setB(JNIEnv* env, jclass, jstring jk, jboolean v) {
+Java_com_ffkit_lite_StateBridge_setBNative(JNIEnv* env, jclass, jstring jk, jboolean v) {
     const char* k = env->GetStringUTFChars(jk, nullptr);
     std::string key = k; env->ReleaseStringUTFChars(jk, k);
     if      (key == "aim_enabled")     g_state.aim_enabled = v;
@@ -46,7 +46,7 @@ Java_com_ffkit_lite_StateBridge_setB(JNIEnv* env, jclass, jstring jk, jboolean v
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_ffkit_lite_StateBridge_setF(JNIEnv* env, jclass, jstring jk, jfloat v) {
+Java_com_ffkit_lite_StateBridge_setFNative(JNIEnv* env, jclass, jstring jk, jfloat v) {
     const char* k = env->GetStringUTFChars(jk, nullptr);
     std::string key = k; env->ReleaseStringUTFChars(jk, k);
     if      (key == "aim_fov")       g_state.aim_fov = v;
@@ -55,7 +55,7 @@ Java_com_ffkit_lite_StateBridge_setF(JNIEnv* env, jclass, jstring jk, jfloat v) 
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_ffkit_lite_StateBridge_setI(JNIEnv* env, jclass, jstring jk, jint v) {
+Java_com_ffkit_lite_StateBridge_setINative(JNIEnv* env, jclass, jstring jk, jint v) {
     const char* k = env->GetStringUTFChars(jk, nullptr);
     std::string key = k; env->ReleaseStringUTFChars(jk, k);
     if      (key == "aim_bone")           g_state.aim_bone = v;
