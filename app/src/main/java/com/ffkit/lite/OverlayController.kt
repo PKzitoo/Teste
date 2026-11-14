@@ -154,6 +154,43 @@ object OverlayController {
     fun openPanel() { bubble.value = false; if (hostView == null) show() }
     fun minimize() { bubble.value = true }
 
+    /**
+     * Re-aplica os flags do overlay (incluindo FLAG_SECURE) sem destruir
+     * a view. Usado quando o user liga/desliga "bloquear print" no painel.
+     */
+    fun refreshFlags() {
+        val lpLocal = lp ?: return
+        val host = hostView ?: return
+        val base = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                   WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        lpLocal.flags = base or
+            (if (StateBridge.flagSecure) WindowManager.LayoutParams.FLAG_SECURE else 0)
+        try { wm?.updateViewLayout(host, lpLocal) } catch (_: Throwable) {}
+    }
+
+    /**
+     * Desliga FLAG_SECURE por N segundos pra permitir screenshot, e
+     * religa automaticamente depois. Toast confirma pros 2 estados.
+     */
+    fun allowPrintFor(ctx: Context, seconds: Int = 10) {
+        val wasSecure = StateBridge.flagSecure
+        StateBridge.flagSecure = false
+        refreshFlags()
+        try {
+            android.widget.Toast.makeText(ctx,
+                "Print liberado por ${seconds}s", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (_: Throwable) {}
+        android.os.Handler(ctx.mainLooper).postDelayed({
+            try {
+                StateBridge.flagSecure = wasSecure
+                refreshFlags()
+                android.widget.Toast.makeText(ctx,
+                    if (wasSecure) "Print bloqueado dnv" else "Print continua liberado",
+                    android.widget.Toast.LENGTH_SHORT).show()
+            } catch (_: Throwable) {}
+        }, seconds * 1000L)
+    }
+
     @Composable
     private fun Bubble() {
         FloatingActionButton(

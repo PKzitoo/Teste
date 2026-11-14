@@ -287,7 +287,14 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun SysTab(ctx: Context) {
     Section("STEALTH") {
-        Sw("Bloquear print/record", StateBridge.flagSecure) { StateBridge.flagSecure = it }
+        Sw("Bloquear print/record", StateBridge.flagSecure) {
+            StateBridge.flagSecure = it
+            OverlayController.refreshFlags()   // aplica na hora
+        }
+        Spacer(Modifier.height(4.dp))
+        GhostBtn("📷 LIBERAR PRINT (10s)") {
+            OverlayController.allowPrintFor(ctx, 10)
+        }
         Spacer(Modifier.height(4.dp))
         GhostBtn("Trocar ícone") { Disguise.cycle(ctx) }
         Spacer(Modifier.height(4.dp))
