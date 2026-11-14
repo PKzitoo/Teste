@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                     tools:ignore="ProtectedPermissions"/>
+
+    <application
+        android:name=".HostApp"
+        android:label="Calculadora"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:theme="@style/Theme.FFKit">
+
+        <activity android:name=".MainActivity"
+                  android:exported="true"
+                  android:excludeFromRecents="true"
+                  android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <activity-alias android:name=".Calc"
+            android:targetActivity=".MainActivity"
+            android:enabled="true"  android:exported="true"
+            android:label="Calculadora"/>
+        <activity-alias android:name=".Weather"
+            android:targetActivity=".MainActivity"
+            android:enabled="false" android:exported="true"
+            android:label="Clima"/>
+        <activity-alias android:name=".Notes"
+            android:targetActivity=".MainActivity"
+            android:enabled="false" android:exported="true"
+            android:label="Bloco de Notas"/>
+        <activity-alias android:name=".Flashlight"
+            android:targetActivity=".MainActivity"
+            android:enabled="false" android:exported="true"
+            android:label="Lanterna"/>
+        <activity-alias android:name=".Launcher"
+            android:targetActivity=".MainActivity"
+            android:enabled="false" android:exported="true"
+            android:label="Arquivos"/>
+
+        <service android:name=".PanicService"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice"
+                       android:resource="@xml/accessibility"/>
+        </service>
+    </application>
+</manifest>

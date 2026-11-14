@@ -1,0 +1,2 @@
+-keep class com.ffkit.lite.** { *; }
+-keep class com.lody.virtual.** { *; }
