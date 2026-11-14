@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,20 +60,35 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
-            .heightIn(min = 32.dp)
+            .heightIn(min = 36.dp)
             .background(Brush.horizontalGradient(
                 listOf(Neon.accent2, Neon.accent)))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(Neon.accent3))
-        Spacer(Modifier.width(7.dp))
-        Text("FFKIT", color = Color.White, fontSize = 11.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-        Spacer(Modifier.width(5.dp))
-        Text("v19-max", color = Color.White.copy(alpha = 0.6f), fontSize = 8.sp)
-        Spacer(Modifier.weight(1f))
-        Text("⋮⋮", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
-        Spacer(Modifier.width(8.dp))
+        // Area draggavel pelo COMPOSE (nao mais por View externo).
+        // detectDragGestures aguarda touch-slop do proprio Compose -> clicks
+        // nos botoes _ e X funcionam normal; drag so dispara apos ~24px de movimento
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f).heightIn(min = 32.dp)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+                        OverlayController.moveBy(drag.x.toInt(), drag.y.toInt())
+                    }
+                }
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Neon.accent3))
+            Spacer(Modifier.width(7.dp))
+            Text("FFKIT", color = Color.White, fontSize = 11.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            Spacer(Modifier.width(5.dp))
+            Text("v19-max", color = Color.White.copy(alpha = 0.6f), fontSize = 8.sp)
+            Spacer(Modifier.weight(1f))
+            Text("⋮⋮", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(6.dp))
         HeaderBtn("_") { onMinimize() }
         Spacer(Modifier.width(4.dp))
         HeaderBtn("X") { OverlayController.hide() }
@@ -102,7 +119,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         "+" to "SAFE"
     )
     Column(
-        Modifier.width(38.dp)
+        Modifier.width(38.dp).fillMaxHeight()   // estica pra bater a altura do Content
             .background(Neon.sidebar)
             .padding(vertical = 4.dp, horizontal = 3.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),

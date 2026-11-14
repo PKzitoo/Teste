@@ -12,10 +12,12 @@ import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +45,6 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 object OverlayController {
     private var wm: WindowManager? = null
     private var hostView: FrameLayout? = null
-    private var dragHandle: View? = null
     private var lp: WindowManager.LayoutParams? = null
     private var ctxRef: Context? = null
     private val bubble = mutableStateOf(true)
@@ -107,71 +108,7 @@ object OverlayController {
             PixelFormat.OPAQUE
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
 
-        val dh = View(c).apply {
-            setBackgroundColor(0x00000000)
-            setOnTouchListener(makeDragListener(cv, lpLocal, host))
-        }
-        // altura do handle depende do modo: bubble=inteiro, panel=so a barra
-        host.addView(dh, dragHandleParamsForMode(c))
-        dragHandle = dh
-
         try { wm?.addView(host, lpLocal); hostView = host; lp = lpLocal } catch (_: Throwable) {}
-    }
-
-    private fun dragHandleParamsForMode(c: Context): FrameLayout.LayoutParams =
-        if (bubble.value)
-            // MESMO tamanho que a bolinha (48dp). NAO usar MATCH_PARENT
-            // ou vira capsula gigante esticando o host.
-            FrameLayout.LayoutParams(dpToPx(c, 48), dpToPx(c, 48))
-        else
-            // barra de titulo do painel: cobre toda largura, 32dp alto
-            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                                     dpToPx(c, 32))
-
-    private fun syncDragHandle() {
-        val c = ctxRef ?: return
-        val host = hostView ?: return
-        val dh = dragHandle ?: return
-        try {
-            dh.layoutParams = dragHandleParamsForMode(c)
-            host.requestLayout()
-        } catch (_: Throwable) {}
-    }
-
-    private fun makeDragListener(cv: View, lpLocal: WindowManager.LayoutParams,
-                                 host: FrameLayout): View.OnTouchListener {
-        var sx = 0; var sy = 0; var tx = 0f; var ty = 0f
-        var dragging = false
-        val density = hostView?.context?.resources?.displayMetrics?.density ?: 3f
-        val slopPx = (8 * density).toInt()
-        return View.OnTouchListener { _, ev ->
-            when (ev.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    sx = lpLocal.x; sy = lpLocal.y
-                    tx = ev.rawX; ty = ev.rawY
-                    dragging = false
-                    false   // deixa Compose receber o DOWN
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = ev.rawX - tx
-                    val dy = ev.rawY - ty
-                    if (!dragging) {
-                        if (dx * dx + dy * dy > slopPx * slopPx) dragging = true
-                        else return@OnTouchListener false
-                    }
-                    lpLocal.x = sx + dx.toInt()
-                    lpLocal.y = sy + dy.toInt()
-                    try { wm?.updateViewLayout(host, lpLocal) } catch (_: Throwable) {}
-                    true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    val wasDragging = dragging
-                    dragging = false
-                    wasDragging
-                }
-                else -> false
-            }
-        }
     }
 
     private fun dpToPx(ctx: Context, dp: Int): Int =
@@ -180,18 +117,27 @@ object OverlayController {
     fun hide() {
         val v = hostView ?: return
         try { wm?.removeView(v) } catch (_: Throwable) {}
-        hostView = null; lp = null; dragHandle = null
+        hostView = null; lp = null
     }
 
     fun toggle() { if (hostView == null) show() else hide() }
 
     fun openPanel() {
         bubble.value = false
-        if (hostView == null) show() else syncDragHandle()
+        if (hostView == null) show()
     }
-    fun minimize() {
-        bubble.value = true
-        syncDragHandle()
+    fun minimize() { bubble.value = true }
+
+    /**
+     * Chamado pelo Compose Header quando usuario arrasta a barra de titulo.
+     * detectDragGestures fornece deltas incrementais — aplicamos no lp.x/y.
+     */
+    fun moveBy(dx: Int, dy: Int) {
+        val lpLocal = lp ?: return
+        val host = hostView ?: return
+        lpLocal.x += dx
+        lpLocal.y += dy
+        try { wm?.updateViewLayout(host, lpLocal) } catch (_: Throwable) {}
     }
 
     fun refreshFlags() {
@@ -237,9 +183,15 @@ object OverlayController {
                 .clip(CircleShape)
                 .background(Neon.accent)
                 .border(1.5.dp, Neon.accent3, CircleShape)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+                        moveBy(drag.x.toInt(), drag.y.toInt())
+                    }
+                }
                 .clickable(
                     interactionSource = interaction,
-                    indication = null  // zero ripple -> resposta instantanea
+                    indication = null
                 ) { openPanel() },
             contentAlignment = Alignment.Center
         ) {
