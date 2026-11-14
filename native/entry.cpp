@@ -60,7 +60,6 @@ Java_com_ffkit_1lite_StateBridge_setBNative(JNIEnv* env, jclass,
     else if (eq(k, "aim_on_scope"))    g_state.aim_on_scope.store(b);
     else if (eq(k, "aim_on_fire"))     g_state.aim_on_fire.store(b);
     else if (eq(k, "aim_ignore_bots")) g_state.aim_ignore_bots.store(b);
-    else if (eq(k, "aim_bone_random")) g_state.aim_bone_random.store(b);
     else if (eq(k, "esp_enabled"))     g_state.esp_enabled.store(b);
     else if (eq(k, "esp_box"))         g_state.esp_box.store(b);
     else if (eq(k, "esp_skeleton"))    g_state.esp_skeleton.store(b);
@@ -83,7 +82,6 @@ Java_com_ffkit_1lite_StateBridge_setFNative(JNIEnv* env, jclass,
     if (!k) return;
     if      (eq(k, "aim_fov"))       g_state.aim_fov.store(v);
     else if (eq(k, "aim_smooth"))    g_state.aim_smooth.store(v);
-    else if (eq(k, "aim_miss_rate")) g_state.aim_miss_rate.store(v);
     else if (eq(k, "esp_max_dist"))  g_state.esp_max_dist.store(v);
     else if (eq(k, "speed_mult"))    g_state.speed_mult.store(v);
     env->ReleaseStringUTFChars(jk, k);
@@ -94,10 +92,9 @@ Java_com_ffkit_1lite_StateBridge_setINative(JNIEnv* env, jclass,
                                              jstring jk, jint v) {
     const char* k = env->GetStringUTFChars(jk, nullptr);
     if (!k) return;
-    if      (eq(k, "aim_bone"))         g_state.aim_bone.store(v);
-    else if (eq(k, "aim_reaction_ms"))  g_state.aim_reaction_ms.store(v);
-    else if (eq(k, "aim_kpm_cap"))      g_state.aim_kpm_cap.store(v);
-    else if (eq(k, "aim_max_hs_streak"))g_state.aim_max_hs_streak.store(v);
+    if      (eq(k, "aim_reaction_ms")) g_state.aim_reaction_ms.store(v);
+    else if (eq(k, "shot_head_count")) g_state.shot_head_count.store(v);
+    else if (eq(k, "shot_body_count")) g_state.shot_body_count.store(v);
     env->ReleaseStringUTFChars(jk, k);
 }
 

@@ -29,10 +29,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(s: Bundle?) {
         super.onCreate(s)
-        // listener do Shizuku: dialog aceito -> warm-up do shell persistente
-        ShizukuBridge.installListener {
-            try { ShizukuBridge.ensureShell() } catch (_: Throwable) {}
-        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 var typed by remember { mutableStateOf("") }

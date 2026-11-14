@@ -173,8 +173,24 @@ extern "C" void injectCameraDelta(float, float);
 
 static std::chrono::steady_clock::time_point g_last_switch;
 static void* g_prev_target = nullptr;
-static int g_hs_streak = 0;
+static int g_shot_cycle = 0;   // posicao no ciclo head-body
+static bool g_prev_firing = false;
 
+/**
+ * SHOT PATTERN MODE
+ * ─────────────────
+ * O usuario configura dois numeros:
+ *   shot_head_count  = N tiros na cabeca
+ *   shot_body_count  = M tiros no peito
+ *
+ * A cada tiro, incrementa g_shot_cycle.
+ *   indice 0..N-1   -> cabeca (bone=0)
+ *   indice N..N+M-1 -> peito  (bone=2)
+ *   em N+M, volta pra 0
+ *
+ * Isso substitui o random miss rate — eh deterministico e parece
+ * "estilo de jogo deliberado" nas replays do Garena.
+ */
 static void aimTick(float cx, float cy, bool scoping, bool firing) {
     if (!g_state.aim_enabled) return;
     if (g_state.aim_on_scope && !scoping) return;
@@ -202,35 +218,21 @@ static void aimTick(float cx, float cy, bool scoping, bool firing) {
                  (now - g_last_switch).count();
     if (since < g_state.aim_reaction_ms.load()) return;
 
-    // osso: fixo ou aleatorio. tambem respeita max_hs_streak.
-    int bone = g_state.aim_bone.load();
-    if (g_state.aim_bone_random) {
-        static thread_local uint32_t rng = 0x1234abcd;
-        rng = rng * 1664525 + 1013904223;
-        int roll = rng % 100;
-        if      (roll < 25) bone = 0;   // cabeca
-        else if (roll < 45) bone = 1;   // pescoco
-        else                bone = 2;   // peito/ombros
+    // conta como "novo tiro" apenas na borda (firing passou de false -> true)
+    // isso impede o ciclo de avancar a cada tick do loop
+    if (firing && !g_prev_firing) {
+        g_shot_cycle++;
     }
-    int cap = g_state.aim_max_hs_streak.load();
-    if (cap > 0 && g_hs_streak >= cap) bone = 2;  // forca peito
+    g_prev_firing = firing;
+
+    int H = std::max(0, g_state.shot_head_count.load());
+    int B = std::max(0, g_state.shot_body_count.load());
+    int total = H + B;
+    if (total <= 0) { H = 1; total = 1; }  // sempre cabeca se zerado
+    int pos = g_shot_cycle % total;
+    int bone = (pos < H) ? 0 : 2;   // 0=cabeca, 2=peito
 
     Vec2 tgt = best->bones2d[bone < 11 ? bone : 0];
-
-    // taxa de erro: random < miss_rate -> espalha o alvo
-    static thread_local uint32_t mrng = 0xdeadbeef;
-    mrng = mrng * 1664525 + 1013904223;
-    float r = (mrng % 10000) / 10000.0f;
-    if (r < g_state.aim_miss_rate.load()) {
-        float off = 40.f + (mrng % 60);        // 40-100 px de desvio
-        float ang = (float)((mrng >> 8) % 360) * 0.0174533f;
-        tgt.x += std::cos(ang) * off;
-        tgt.y += std::sin(ang) * off;
-    } else if (bone == 0) {
-        g_hs_streak++;  // conta HS real
-    } else {
-        g_hs_streak = 0;
-    }
 
     float sm = std::max(1.f, g_state.aim_smooth.load());
     injectCameraDelta((tgt.x - cx) / sm, (tgt.y - cy) / sm);

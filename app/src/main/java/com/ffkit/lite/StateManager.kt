@@ -10,8 +10,8 @@ import java.io.File
  * o mesmo arquivo state.json no filesDir do pacote com.ffkit.lite.
  *
  * - do lado do app: StateBridge chama save() a cada mudanca de toggle.
- * - do lado do hook Xposed: FFKitXposedHook abre um scheduler que
- *   le este arquivo a cada 500ms e aplica no State nativo via JNI.
+ * - do lado do hook: FFKitXposedHook abre um scheduler que le este
+ *   arquivo a cada 500ms e aplica no State nativo via JNI.
  */
 object StateManager {
     private const val FILE_NAME = "state.json"
@@ -31,21 +31,27 @@ object StateManager {
             put("aim_ignore_bots",  StateBridge.aimIgnoreBots)
             put("aim_fov",          StateBridge.aimFov.toDouble())
             put("aim_smooth",       StateBridge.aimSmooth.toDouble())
-            put("aim_bone",         StateBridge.aimBone)
-            put("aim_miss_rate",    StateBridge.aimMissRate.toDouble())
-            put("aim_bone_random",  StateBridge.aimBoneRandom)
             put("aim_reaction_ms",  StateBridge.aimReactionMs)
-            put("aim_kpm_cap",      StateBridge.aimKpmCap)
-            put("aim_max_hs_streak",StateBridge.aimMaxHsStreak)
+            put("shot_head_count",  StateBridge.shotHeadCount)
+            put("shot_body_count",  StateBridge.shotBodyCount)
+            put("esp_enabled",      StateBridge.espEnabled)
+            put("esp_box",          StateBridge.espBox)
+            put("esp_skeleton",     StateBridge.espSkeleton)
+            put("esp_health",       StateBridge.espHealth)
+            put("esp_distance",     StateBridge.espDistance)
+            put("esp_name",         StateBridge.espName)
+            put("esp_max_dist",     StateBridge.espMaxDist.toDouble())
             put("no_recoil",        StateBridge.noRecoil)
+            put("fast_fire",        StateBridge.fastFire)
             put("speed_hack",       StateBridge.speedHack)
+            put("speed_mult",       StateBridge.speedMult.toDouble())
+            put("fly_mode",         StateBridge.flyMode)
+            put("wide_view",        StateBridge.wideView)
             put("flag_secure",      StateBridge.flagSecure)
             put("ts", System.currentTimeMillis())
         }
         val text = o.toString()
-        // 1) copia local pro app (compatibilidade)
         try { path(ctx).writeText(text) } catch (_: Throwable) {}
-        // 2) copia publica em /sdcard/Download/ pro FF patcheado ler
         try {
             publicPath.parentFile?.mkdirs()
             publicPath.writeText(text)
@@ -63,9 +69,13 @@ object StateManager {
         fun i(k: String) = if (o.has(k)) StateBridge.setI(k, o.getInt(k)) else Unit
 
         b("aim_enabled"); b("aim_on_scope"); b("aim_on_fire")
-        b("aim_ignore_bots"); b("aim_bone_random")
-        b("no_recoil"); b("speed_hack"); b("flag_secure")
-        f("aim_fov"); f("aim_smooth"); f("aim_miss_rate")
-        i("aim_bone"); i("aim_reaction_ms"); i("aim_kpm_cap"); i("aim_max_hs_streak")
+        b("aim_ignore_bots")
+        b("esp_enabled"); b("esp_box"); b("esp_skeleton")
+        b("esp_health"); b("esp_distance"); b("esp_name")
+        b("no_recoil"); b("fast_fire")
+        b("speed_hack"); b("fly_mode"); b("wide_view")
+        b("flag_secure")
+        f("aim_fov"); f("aim_smooth"); f("esp_max_dist"); f("speed_mult")
+        i("aim_reaction_ms"); i("shot_head_count"); i("shot_body_count")
     }
 }
