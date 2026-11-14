@@ -179,6 +179,27 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         }
     }
 
+    Section("DIAGNOSTICO") {
+        PrimaryBtn("TEST SWIPE (debug)") {
+            RecoilEngine.testOnce()
+            ShizukuBridge.toast(ctx, RecoilEngine.lastError.ifBlank { "enviado" })
+        }
+        Spacer(Modifier.height(3.dp))
+        Text("Toca com o FF aberto no fundo. Se a camera do FF mexer, Shizuku ta OK — problema so no tuning. Se nao mexer, Shizuku nao esta enviando input.",
+            color = Neon.dim, fontSize = 9.sp)
+        Text("Swipes enviados: ${RecoilEngine.swipesSent}  |  ${RecoilEngine.lastError.ifBlank { "—" }}",
+            color = Neon.accent3, fontSize = 9.sp)
+    }
+
+    Section("MODO") {
+        Sw("SEMPRE LIGADO (sem botão)", StateBridge.alwaysOn) {
+            StateBridge.alwaysOn = it
+            if (it) RecoilEngine.start() else RecoilEngine.stop()
+        }
+        Text("Com sempre-ligado: recoil roda continuamente. A camera vai mover sozinha mesmo sem atirar.",
+            color = Neon.dim, fontSize = 9.sp)
+    }
+
     Section("BOTAO ASSIST (flutuante)") {
         var visible by remember { mutableStateOf(AssistTrigger.isVisible()) }
         PrimaryBtn(if (visible) "Esconder botão" else "Mostrar botão") {
@@ -186,9 +207,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             visible = AssistTrigger.isVisible()
         }
         Spacer(Modifier.height(3.dp))
-        Text("Segure o botão enquanto atira. Solte para parar.",
-            color = Neon.dim, fontSize = 9.sp)
-        Text("Para reposicionar: toque LONGO e arraste.",
+        Text("Segure o botão enquanto atira. Toque longo + arrasta pra reposicionar.",
             color = Neon.dim, fontSize = 9.sp)
 
         Spacer(Modifier.height(4.dp))
@@ -200,8 +219,8 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         }
     }
 
-    Section("LOOK PAD (onde manda o swipe)") {
-        Text("Coordenadas do centro do \"pad de camera\" do FF.",
+    Section("LOOK PAD (coord do swipe)") {
+        Text("Centro do pad direito do FF (olhar em volta).",
             color = Neon.dim, fontSize = 9.sp)
         Sl("X (px)", 100f..2400f, StateBridge.lookPadX.toFloat()) {
             StateBridge.lookPadX = it.toInt()
@@ -209,7 +228,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Sl("Y (px)", 100f..1200f, StateBridge.lookPadY.toFloat()) {
             StateBridge.lookPadY = it.toInt()
         }
-        Text("Padrao: X=1800 Y=540 (OK pra POCO X5 Pro landscape).",
+        Sl("Duração swipe ms", 20f..120f, StateBridge.swipeDurationMs.toFloat()) {
+            StateBridge.swipeDurationMs = it.toInt()
+        }
+        Text("Default X=1800 Y=540 Dur=40. Se nao reagir, aumenta duração pra 60-80.",
             color = Neon.dim, fontSize = 9.sp)
     }
 }
@@ -217,34 +239,122 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ TAB: WEAPON ============
 
 @Composable private fun WeaponTab() {
-    Section("ARMA") {
-        var sel by remember { mutableStateOf(StateBridge.weaponIdx) }
+    var slot by remember { mutableStateOf(0) }   // 0=primaria, 1=secundaria
+    var pri  by remember { mutableStateOf(StateBridge.weaponPrimary) }
+    var sec  by remember { mutableStateOf(StateBridge.weaponSecondary) }
+    var active by remember { mutableStateOf(StateBridge.weaponIdx) }
+
+    Section("ARMA ATIVA") {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            // tab PRI / SEC
+            val isPri = active == pri
+            Box(
+                Modifier.weight(1f).heightIn(min = 36.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(if (isPri) Neon.accent else Neon.glass)
+                    .border(1.dp,
+                        if (isPri) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
+                        RoundedCornerShape(5.dp))
+                    .clickable { active = pri; StateBridge.weaponIdx = pri },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("PRI", color = Color.White, fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold)
+                    Text(WeaponPresets.byIndex(pri).shortCode,
+                        color = Color.White, fontSize = 11.sp,
+                        fontWeight = FontWeight.Black)
+                }
+            }
+            val isSec = active == sec
+            Box(
+                Modifier.weight(1f).heightIn(min = 36.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(if (isSec) Neon.accent else Neon.glass)
+                    .border(1.dp,
+                        if (isSec) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
+                        RoundedCornerShape(5.dp))
+                    .clickable { active = sec; StateBridge.weaponIdx = sec },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("SEC", color = Color.White, fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold)
+                    Text(WeaponPresets.byIndex(sec).shortCode,
+                        color = Color.White, fontSize = 11.sp,
+                        fontWeight = FontWeight.Black)
+                }
+            }
+        }
+        Spacer(Modifier.height(3.dp))
+        Text("Toca em PRI ou SEC pra alternar. A ATIVA eh a que o recoil usa.",
+            color = Neon.dim, fontSize = 9.sp)
+    }
+
+    Section("ESCOLHER ARMA — Slot ${if (slot == 0) "PRI" else "SEC"}") {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth()) {
+            Box(
+                Modifier.weight(1f).heightIn(min = 28.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(if (slot == 0) Neon.accent else Neon.glass)
+                    .border(1.dp, Neon.accent3.copy(alpha = if (slot == 0) 1f else 0.3f),
+                        RoundedCornerShape(5.dp))
+                    .clickable { slot = 0 },
+                contentAlignment = Alignment.Center
+            ) { Text("PRI", color = Color.White, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold) }
+            Box(
+                Modifier.weight(1f).heightIn(min = 28.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(if (slot == 1) Neon.accent else Neon.glass)
+                    .border(1.dp, Neon.accent3.copy(alpha = if (slot == 1) 1f else 0.3f),
+                        RoundedCornerShape(5.dp))
+                    .clickable { slot = 1 },
+                contentAlignment = Alignment.Center
+            ) { Text("SEC", color = Color.White, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold) }
+        }
+        Spacer(Modifier.height(4.dp))
+
         val presets = WeaponPresets.LIST
-        // grid 3 colunas
+        val current = if (slot == 0) pri else sec
         for (chunk in presets.chunked(3)) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 chunk.forEach { p ->
                     val idx = presets.indexOf(p)
-                    val active = sel == idx
+                    val sel = current == idx
                     Box(
                         Modifier.weight(1f).heightIn(min = 30.dp)
                             .clip(RoundedCornerShape(5.dp))
-                            .background(if (active) Neon.accent else Neon.glass)
+                            .background(if (sel) Neon.accent else Neon.glass)
                             .border(1.dp,
-                                if (active) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
+                                if (sel) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
                                 RoundedCornerShape(5.dp))
-                            .clickable { sel = idx; StateBridge.weaponIdx = idx },
+                            .clickable {
+                                if (slot == 0) {
+                                    pri = idx
+                                    StateBridge.weaponPrimary = idx
+                                    if (active == StateBridge.weaponIdx) {
+                                        active = idx; StateBridge.weaponIdx = idx
+                                    }
+                                } else {
+                                    sec = idx
+                                    StateBridge.weaponSecondary = idx
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(p.shortCode, color = Color.White, fontSize = 10.sp,
-                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
                     }
                 }
                 repeat(3 - chunk.size) { Spacer(Modifier.weight(1f)) }
             }
             Spacer(Modifier.height(3.dp))
         }
-        val p = WeaponPresets.byIndex(sel)
+
+        val p = WeaponPresets.byIndex(current)
         Spacer(Modifier.height(2.dp))
         Text("\"${p.name}\": ${p.notes}", color = Neon.accent3, fontSize = 9.sp)
     }
@@ -254,6 +364,13 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             StateBridge.recoilIntensity = it
         }
         Text("1.0 = padrão. >1 = puxa mais forte. <1 = mais suave.",
+            color = Neon.dim, fontSize = 9.sp)
+    }
+
+    Section("AUTO-DETECT ARMA?") {
+        Text("Pra detectar qual arma vc esta usando precisaria ler a tela do FF (MediaProjection). Isso o Garena consegue DETECTAR e banir.",
+            color = Neon.dim, fontSize = 9.sp)
+        Text("Por isso ficou MANUAL: toca PRI/SEC pra trocar in-game.",
             color = Neon.dim, fontSize = 9.sp)
     }
 }

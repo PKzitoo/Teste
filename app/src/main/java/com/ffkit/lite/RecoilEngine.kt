@@ -1,34 +1,29 @@
 package com.ffkit.lite
 
+import android.util.Log
 import kotlin.math.max
 import kotlin.math.sin
 
 /**
  * Motor de compensacao de recuo. Roda enquanto o botao ASSIST esta
- * segurado. Thread dedicada; para quando o flag [running] vira false.
+ * segurado OU quando alwaysOn=true.
  *
- * A cada tick:
- *   • le o preset ativo em StateBridge
- *   • calcula o delta (puxada vertical + horizontal), aplicando
- *     burst multiplier nos primeiros N ticks
- *   • adiciona jitter leve (nao fica identico toda vez — anti-pattern)
- *   • manda `input swipe` via Shizuku, partindo do centro do "look pad"
- *     configurado pelo usuario
- *
- * O FF entende input vindos do shell como se fossem toques reais do
- * usuario, porque vem do nivel do sistema. Nao eh detectavel como
- * "cheat memoria" nem como "screen capture" — eh igual a um controle
- * de teclado fisico.
+ * Usa /system/bin/input direto (full path) via Shizuku shell —
+ * alguns shells nao tem `input` no PATH imediato.
  */
 object RecoilEngine {
+    private const val TAG = "ffkit-recoil"
     @Volatile private var running = false
     private var worker: Thread? = null
     private var tickCount = 0
+    var swipesSent = 0; private set
+    var lastError: String = ""; private set
 
     fun start() {
         if (running) return
         running = true
         tickCount = 0
+        swipesSent = 0
         worker = Thread {
             runLoop()
         }.apply { isDaemon = true; name = "ffkit-recoil"; start() }
@@ -43,9 +38,27 @@ object RecoilEngine {
 
     val isActive: Boolean get() = running
 
+    /**
+     * Swipe DIAGNOSTICO visivel. Da pra confirmar se o Shizuku esta
+     * de fato enviando input. Se o FF/tela mexer ao tocar o botao
+     * TEST, Shizuku ta OK — o problema eh so coord/forca/intervalo.
+     */
+    fun testOnce() {
+        val cx = StateBridge.lookPadX
+        val cy = StateBridge.lookPadY
+        val cmd = "/system/bin/input swipe $cx $cy $cx ${cy + 120} 200"
+        val ok = ShizukuBridge.send(cmd)
+        lastError = if (ok) "TEST swipe enviado em ($cx,$cy)+120"
+                    else "TEST FAILED: Shizuku off ou shell morto"
+        Log.d(TAG, lastError)
+    }
+
     private fun runLoop() {
         while (running) {
-            try { tick() } catch (_: Throwable) {}
+            try { tick() } catch (t: Throwable) {
+                lastError = "tick err: ${t.message}"
+                Log.e(TAG, lastError)
+            }
             val preset = currentPreset()
             val sleep = max(10, preset.intervalMs)
             try { Thread.sleep(sleep.toLong()) }
@@ -55,29 +68,27 @@ object RecoilEngine {
 
     private fun tick() {
         val p = currentPreset()
-        if (p.pullY <= 0f && p.pullX == 0f) return  // AWM / shotgun
+        if (p.pullY <= 0f && p.pullX == 0f) return
 
-        // burst multiplier nos primeiros N ticks
         val mult = if (tickCount < p.burstLen) p.burstMult else 1f
-
-        // jitter: +/- 15% random — anti-pattern recognition
         val jY = 1f + (Math.random().toFloat() - 0.5f) * 0.3f
         val jX = 1f + (Math.random().toFloat() - 0.5f) * 0.3f
-
-        // intensidade global (0.5x..1.5x) que o user ajusta no painel
         val gain = StateBridge.recoilIntensity.coerceIn(0.3f, 2.0f)
 
         val dy = (p.pullY * mult * gain * jY).toInt()
         val dx = (p.pullX * mult * gain * jX).toInt()
-
-        // onda senoidal leve pra deixar o X menos linear (nao eh linha reta)
         val wave = (sin(tickCount * 0.6) * 1.5).toInt()
         val dxFinal = dx + wave
 
         val cx = StateBridge.lookPadX
         val cy = StateBridge.lookPadY
-        // movimento curto, duracao curta (evita "swipe de arrasto")
-        ShizukuBridge.swipe(cx, cy, cx + dxFinal, cy + dy, 24)
+        val dur = StateBridge.swipeDurationMs.coerceIn(20, 200)
+
+        // usa /system/bin/input (full path) pra evitar PATH issues
+        val cmd = "/system/bin/input swipe $cx $cy ${cx + dxFinal} ${cy + dy} $dur"
+        val ok = ShizukuBridge.send(cmd)
+        if (ok) swipesSent++
+        else lastError = "swipe send failed at tick $tickCount"
 
         tickCount++
     }

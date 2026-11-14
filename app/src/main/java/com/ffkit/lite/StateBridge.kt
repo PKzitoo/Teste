@@ -43,7 +43,11 @@ object StateBridge {
 
     // ===== RECOIL (no-root) =====
     // selecao e intensidade do padrao de recuo
-    var weaponIdx       = 0;      set(v) { field = v; flush() }   // indice em WeaponPresets.LIST
+    var weaponIdx       = 0;      set(v) { field = v; flush() }   // arma ATIVA
+    var weaponPrimary   = 0;      set(v) { field = v; flush() }   // slot primario (1a arma)
+    var weaponSecondary = 1;      set(v) { field = v; flush() }   // slot secundario (2a arma)
+    var alwaysOn        = false;  set(v) { field = v; flush() }   // sempre ligado, sem botao
+    var swipeDurationMs = 40;     set(v) { field = v; flush() }   // duracao de cada swipe
     var recoilIntensity = 1.0f;   set(v) { field = v; flush() }   // 0.3..2.0 (gain global)
 
     // posicao do "look pad" do FF (onde a gente envia o swipe de recuo).
