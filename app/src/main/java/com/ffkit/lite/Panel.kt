@@ -64,19 +64,23 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 }
 
 @Composable private fun CombatTab() {
-    val fov   = remember { mutableStateOf(StateBridge.aimFov) }
-    val sm    = remember { mutableStateOf(StateBridge.aimSmooth) }
-    val miss  = remember { mutableStateOf(StateBridge.aimMissRate) }
-    val react = remember { mutableStateOf(StateBridge.aimReactionMs.toFloat()) }
-    val streak= remember { mutableStateOf(StateBridge.aimMaxHsStreak.toFloat()) }
+    val fov    = remember { mutableStateOf(StateBridge.aimFov) }
+    val sm     = remember { mutableStateOf(StateBridge.aimSmooth) }
+    val miss   = remember { mutableStateOf(StateBridge.aimMissRate) }
+    val react  = remember { mutableStateOf(StateBridge.aimReactionMs.toFloat()) }
+    val streak = remember { mutableStateOf(StateBridge.aimMaxHsStreak.toFloat()) }
+    val sticky = remember { mutableStateOf(StateBridge.aimStickyMs.toFloat()) }
     Column {
         Text("— AIM —", color = Neon.accent)
         SwitchRow("aimbot",       StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
         SwitchRow("so mirando",   StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
         SwitchRow("so atirando",  StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
         SwitchRow("ignorar bots", StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
-        SliderRow("fov",       30f..300f, fov.value)  { fov.value = it; StateBridge.aimFov = it }
-        SliderRow("suavidade", 1f..10f,   sm.value)   { sm.value = it; StateBridge.aimSmooth = it }
+        SliderRow("fov (raio em px)",  30f..600f, fov.value)  { fov.value = it; StateBridge.aimFov = it }
+        SliderRow("forca do pull 1-10", 1f..10f,  sm.value)  { sm.value = it; StateBridge.aimSmooth = it }
+        SliderRow("stickiness (ms)",   100f..1500f, sticky.value) {
+            sticky.value = it; StateBridge.aimStickyMs = it.toInt()
+        }
         Spacer(Modifier.height(6.dp))
         Text("— COMPORTAMENTO (anti-ban) —", color = Neon.accent2)
         SwitchRow("osso aleatorio",  StateBridge.aimBoneRandom){ StateBridge.aimBoneRandom = it }
@@ -89,6 +93,9 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         SliderRow("cap HS consec.",     0f..10f,  streak.value) {
             streak.value = it; StateBridge.aimMaxHsStreak = it.toInt()
         }
+        Spacer(Modifier.height(6.dp))
+        Text("DICA: forca 3-5 = humano, 6-7 = agressivo mas safe, 8+ = snap",
+            color = Neon.dim)
         Spacer(Modifier.height(6.dp))
         Text("— OUTROS —", color = Neon.accent3)
         SwitchRow("sem recoil",   StateBridge.noRecoil)      { StateBridge.noRecoil = it }

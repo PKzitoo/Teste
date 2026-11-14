@@ -23,10 +23,12 @@ object CvBridge {
         if (data == null || code != Activity.RESULT_OK) return
         CvService.start(ctx, code, data)
         CvOverlay.show(ctx)
+        CvAimLoop.start(ctx)
         running = true
     }
 
     fun stop(ctx: Context) {
+        CvAimLoop.stop()
         CvOverlay.hide(ctx)
         CvService.stop(ctx)
         running = false

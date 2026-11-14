@@ -20,6 +20,8 @@ object StateBridge {
     var aimReactionMs = 200;   set(v) { field = v; setI("aim_reaction_ms", v); flush() }
     var aimKpmCap     = 8;     set(v) { field = v; setI("aim_kpm_cap", v);     flush() }
     var aimMaxHsStreak= 3;     set(v) { field = v; setI("aim_max_hs_streak", v); flush() }
+    // CV aim loop (tracking contínuo)
+    var aimStickyMs   = 300;   set(v) { field = v; flush() }
 
     var noRecoil      = true;  set(v) { field = v; setB("no_recoil", v);       flush() }
     var speedHack     = false; set(v) { field = v; setB("speed_hack", v);      flush() }
