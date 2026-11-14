@@ -27,24 +27,8 @@ import androidx.compose.ui.unit.dp
 class MainActivity : ComponentActivity() {
     private val pin = "1337"
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CvBridge.REQ_PROJECTION) {
-            CvBridge.onProjectionResult(applicationContext, resultCode, data)
-        }
-    }
-
     override fun onCreate(s: Bundle?) {
         super.onCreate(s)
-        // listener do Shizuku: se o usuario aceitar o dialog, auto-ativa
-        // a acessibilidade pro PanicService (bypass da Restricted Settings)
-        ShizukuBridge.installListener {
-            try {
-                val ok = ShizukuBridge.autoEnableAccessibility(applicationContext)
-                ShizukuBridge.toast(applicationContext,
-                    if (ok) "Acessibilidade ON via Shizuku" else "Shizuku falhou")
-            } catch (_: Throwable) {}
-        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 var typed by remember { mutableStateOf("") }

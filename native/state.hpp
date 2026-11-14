@@ -25,6 +25,7 @@ struct State {
     std::atomic<bool>  wide_view       {false};
     std::atomic<float> fov_mult        {1.3f};
 
+    std::atomic<bool>  esp_enabled     {true};
     std::atomic<bool>  esp_box         {true};
     std::atomic<bool>  esp_skeleton    {true};
     std::atomic<bool>  esp_name        {false};

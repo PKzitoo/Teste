@@ -15,20 +15,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Painel ffkit v16-root.
+ * 4 tabs: AIM / ESP / MISC / SYS
+ * Fundo preto solido, acentos em azul escuro.
+ */
 @Composable
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
     Surface(
-        modifier = Modifier.width(230.dp),
+        modifier = Modifier.width(240.dp),
         color = Neon.bg,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
     ) {
         Column {
@@ -52,32 +56,32 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             .heightIn(min = 32.dp)
             .background(Brush.horizontalGradient(
                 listOf(Neon.accent2, Neon.accent)))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White))
-        Spacer(Modifier.width(6.dp))
-        Text("FFKIT", color = Color.White, fontSize = 10.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-        Spacer(Modifier.width(4.dp))
-        Text("@OLIVIA", color = Color.White.copy(alpha = 0.7f),
+        Box(Modifier.size(8.dp).clip(CircleShape).background(Neon.accent3))
+        Spacer(Modifier.width(7.dp))
+        Text("FFKIT", color = Color.White, fontSize = 11.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Spacer(Modifier.width(5.dp))
+        Text("v16-root", color = Color.White.copy(alpha = 0.6f),
             fontSize = 8.sp)
         Spacer(Modifier.weight(1f))
-        Text("⋮⋮", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-        Spacer(Modifier.width(6.dp))
+        Text("⋮⋮", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
+        Spacer(Modifier.width(8.dp))
         HeaderBtn("_") { onMinimize() }
-        Spacer(Modifier.width(3.dp))
+        Spacer(Modifier.width(4.dp))
         HeaderBtn("X") { OverlayController.hide() }
     }
 }
 
 @Composable private fun HeaderBtn(label: String, onClick: () -> Unit) {
     Box(
-        Modifier.size(18.dp).clip(RoundedCornerShape(3.dp))
-            .background(Color.White.copy(alpha = 0.18f))
+        Modifier.size(20.dp).clip(RoundedCornerShape(4.dp))
+            .background(Color.White.copy(alpha = 0.2f))
             .clickable { try { onClick() } catch (_: Throwable) {} },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = 9.sp,
+        Text(label, color = Color.White, fontSize = 10.sp,
             fontWeight = FontWeight.Bold)
     }
 }
@@ -85,12 +89,12 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ SIDEBAR ============
 
 @Composable private fun Sidebar(selected: Int, onSelect: (Int) -> Unit) {
-    val items = listOf("A" to "AIM", "E" to "ESP", "C" to "CV", "S" to "SYS")
+    val items = listOf("A" to "AIM", "E" to "ESP", "M" to "MISC", "S" to "SYS")
     Column(
-        Modifier.width(40.dp).fillMaxHeight()
+        Modifier.width(44.dp).fillMaxHeight()
             .background(Neon.sidebar)
-            .padding(vertical = 6.dp, horizontal = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items.forEachIndexed { i, (icon, label) ->
@@ -101,25 +105,26 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun SideIcon(icon: String, label: String,
                                  selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) Neon.accent else Neon.accent2.copy(alpha = 0.35f)
+    val bg = if (selected) Neon.accent else Neon.glass
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(32.dp)
+        modifier = Modifier.width(36.dp)
     ) {
         Box(
-            Modifier.size(32.dp).clip(RoundedCornerShape(6.dp))
+            Modifier.size(36.dp).clip(RoundedCornerShape(7.dp))
                 .background(bg)
                 .border(1.dp,
-                    if (selected) Color.White.copy(alpha = 0.3f) else Color.Transparent,
-                    RoundedCornerShape(6.dp))
+                    if (selected) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
+                    RoundedCornerShape(7.dp))
                 .clickable { try { onClick() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text(icon, color = Color.White, fontSize = 13.sp,
+            Text(icon, color = Color.White, fontSize = 14.sp,
                 fontWeight = FontWeight.Black)
         }
-        Text(label, color = if (selected) Neon.accent else Neon.dim,
-            fontSize = 6.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(2.dp))
+        Text(label, color = if (selected) Neon.accent3 else Neon.dim,
+            fontSize = 7.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -127,16 +132,16 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
-        Modifier.weight(1f).heightIn(min = 180.dp, max = 320.dp)
+        Modifier.weight(1f).heightIn(min = 200.dp, max = 340.dp)
             .background(Neon.panel)
-            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .padding(horizontal = 7.dp, vertical = 7.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         when (tab) {
             0 -> AimTab()
             1 -> EspTab()
-            2 -> CvTab(ctx)
+            2 -> MiscTab()
             3 -> SysTab(ctx)
         }
     }
@@ -153,9 +158,6 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Section("MIRA") {
         Sl("Aim FOV",       30f..600f,   StateBridge.aimFov)    { StateBridge.aimFov = it }
         Sl("Força",         1f..10f,     StateBridge.aimSmooth) { StateBridge.aimSmooth = it }
-        Sl("Stickiness ms", 100f..1500f, StateBridge.aimStickyMs.toFloat()) {
-            StateBridge.aimStickyMs = it.toInt()
-        }
     }
     Section("HUMANIZAÇÃO") {
         Sw("Osso aleatório", StateBridge.aimBoneRandom){ StateBridge.aimBoneRandom = it }
@@ -181,11 +183,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             labels.forEachIndexed { i, lb ->
                 val active = sel == i
                 Box(
-                    Modifier.weight(1f).heightIn(min = 26.dp)
+                    Modifier.weight(1f).heightIn(min = 28.dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(if (active) Neon.accent else Neon.glass)
                         .border(1.dp,
-                            if (active) Neon.accent else Neon.stroke.copy(alpha = 0.3f),
+                            if (active) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
                             RoundedCornerShape(5.dp))
                         .clickable { sel = i; try { StateBridge.aimBone = i } catch (_: Throwable) {} },
                     contentAlignment = Alignment.Center
@@ -200,95 +202,38 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun EspTab() {
     Section("ESP") {
-        Text("ESP ativo por padrão no modo CV.",
-            color = Neon.text, fontSize = 10.sp)
-        Text("Caixa + ponto na cabeça aparecem em cima de todo inimigo detectado em tempo real.",
-            color = Neon.dim, fontSize = 9.sp)
+        Sw("Ativar ESP",       StateBridge.espEnabled)   { StateBridge.espEnabled = it }
+        Sw("Caixa 2D",         StateBridge.espBox)       { StateBridge.espBox = it }
+        Sw("Esqueleto",        StateBridge.espSkeleton)  { StateBridge.espSkeleton = it }
+        Sw("Barra de vida",    StateBridge.espHealth)    { StateBridge.espHealth = it }
+        Sw("Distância",        StateBridge.espDistance)  { StateBridge.espDistance = it }
+        Sw("Nome",             StateBridge.espName)      { StateBridge.espName = it }
     }
     Section("FILTRO") {
-        Sw("Marcar bots", StateBridge.aimIgnoreBots.not().let { true }) { }
-        Text("distância max: 150m (pegada pelo CV engine)",
-            color = Neon.dim, fontSize = 9.sp)
+        Sl("Distância max (m)", 20f..500f, StateBridge.espMaxDist) {
+            StateBridge.espMaxDist = it
+        }
     }
 }
 
-@Composable private fun CvTab(ctx: Context) {
-    Section("CV ENGINE") {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Status", color = Neon.text, fontSize = 11.sp,
-                modifier = Modifier.weight(1f))
-            val live = CvBridge.running
-            Box(Modifier.size(7.dp).clip(CircleShape)
-                .background(if (live) Neon.accent3 else Neon.dim))
-            Spacer(Modifier.width(4.dp))
-            Text(if (live) "LIGADO" else "DESLIGADO",
-                color = if (live) Neon.accent3 else Neon.dim,
-                fontSize = 10.sp, fontWeight = FontWeight.Bold)
+@Composable private fun MiscTab() {
+    Section("ARMAS") {
+        Sw("No-Recoil",         StateBridge.noRecoil)    { StateBridge.noRecoil = it }
+        Sw("Fast Fire",         StateBridge.fastFire)    { StateBridge.fastFire = it }
+    }
+    Section("MOVIMENTO") {
+        Sw("Speed Hack",        StateBridge.speedHack)   { StateBridge.speedHack = it }
+        Sl("Multiplicador", 1f..3f, StateBridge.speedMult) {
+            StateBridge.speedMult = it
         }
-        Spacer(Modifier.height(6.dp))
-        PrimaryBtn("Ativar CV (pede tela)") {
-            if (!CvBridge.running) CvBridge.requestProjection(ctx)
-        }
-        Spacer(Modifier.height(4.dp))
-        GhostBtn("Desativar CV") { CvBridge.stop(ctx) }
-        Spacer(Modifier.height(4.dp))
-        Text("Sem injeção. Não muda nada no FF. Permissão de gravação de tela é inofensiva.",
-            color = Neon.dim, fontSize = 9.sp)
+        Sw("Fly Mode",          StateBridge.flyMode)     { StateBridge.flyMode = it }
+    }
+    Section("CAMERA") {
+        Sw("Wide View (FOV)",   StateBridge.wideView)    { StateBridge.wideView = it }
     }
 }
 
 @Composable private fun SysTab(ctx: Context) {
-    Section("SHIZUKU") {
-        var st by remember { mutableStateOf(ShizukuBridge.state()) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                st = ShizukuBridge.state()
-                kotlinx.coroutines.delay(1500)
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Serviço", color = Neon.text, fontSize = 11.sp,
-                modifier = Modifier.weight(1f))
-            val (c, lbl) = when (st) {
-                ShizukuBridge.State.READY        -> Neon.accent3 to "PRONTO"
-                ShizukuBridge.State.NO_PERMISSION -> Color(0xFFFFB020) to "SEM PERM"
-                ShizukuBridge.State.UNAVAILABLE   -> Neon.danger to "OFF"
-            }
-            Box(Modifier.size(7.dp).clip(CircleShape).background(c))
-            Spacer(Modifier.width(4.dp))
-            Text(lbl, color = c, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(6.dp))
-        when (st) {
-            ShizukuBridge.State.UNAVAILABLE ->
-                Text("Abra o Shizuku e ative 'Depuração sem fio'.",
-                    color = Neon.dim, fontSize = 9.sp)
-            ShizukuBridge.State.NO_PERMISSION ->
-                PrimaryBtn("Pedir permissão Shizuku") {
-                    ShizukuBridge.requestPermission()
-                }
-            ShizukuBridge.State.READY -> {
-                PrimaryBtn("ON Acessibilidade (bypass)") {
-                    val ok = try {
-                        ShizukuBridge.autoEnableAccessibility(ctx)
-                    } catch (_: Throwable) { false }
-                    ShizukuBridge.toast(ctx,
-                        if (ok) "Acessibilidade ON" else "Falhou")
-                }
-                Spacer(Modifier.height(4.dp))
-                GhostBtn("OFF Acessibilidade") {
-                    val ok = try {
-                        ShizukuBridge.autoDisableAccessibility(ctx)
-                    } catch (_: Throwable) { false }
-                    ShizukuBridge.toast(ctx,
-                        if (ok) "Acessibilidade OFF" else "Falhou")
-                }
-                Spacer(Modifier.height(4.dp))
-                Text("Com Shizuku ON, o botão acima liga o PanicService sem passar pela tela bloqueada da HyperOS.",
-                    color = Neon.dim, fontSize = 9.sp)
-            }
-        }
-    }
     Section("STEALTH") {
         Sw("Bloquear print/record", StateBridge.flagSecure) { StateBridge.flagSecure = it }
         Spacer(Modifier.height(4.dp))
@@ -298,11 +243,20 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Spacer(Modifier.height(4.dp))
         GhostBtn("Sumir dos recentes") { Stealth.hideRecents(ctx) }
     }
-    Section("ATALHOS") {
-        Text("VOL+ 3x reabre bolha", color = Neon.text, fontSize = 10.sp)
-        Text("VOL- 3x = PANIC total", color = Neon.text, fontSize = 10.sp)
-        Text("Toque longo pra arrastar o painel ou a bolha",
-            color = Neon.dim, fontSize = 9.sp)
+    Section("INFO") {
+        InfoRow("Versão", "16.0-root")
+        InfoRow("Modo", "LSPosed + Zygisk")
+        InfoRow("PIN", "1337")
+        InfoRow("Panic", "Botão abaixo")
+    }
+}
+
+@Composable private fun InfoRow(k: String, v: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(k, color = Neon.dim, fontSize = 10.sp,
+            modifier = Modifier.weight(1f))
+        Text(v, color = Neon.accent3, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold)
     }
 }
 
@@ -311,29 +265,29 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Footer() {
     Row(
         Modifier.fillMaxWidth().background(Neon.sidebar)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 7.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Box(
-            Modifier.weight(1f).heightIn(min = 28.dp)
-                .clip(RoundedCornerShape(5.dp))
+            Modifier.weight(1f).heightIn(min = 30.dp)
+                .clip(RoundedCornerShape(6.dp))
                 .background(Neon.danger)
                 .clickable { try {
                     StateBridge.panic(); OverlayController.hide()
                 } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("PANIC", color = Color.White, fontSize = 10.sp,
+            Text("PANIC", color = Color.White, fontSize = 11.sp,
                 fontWeight = FontWeight.Bold)
         }
         Box(
-            Modifier.weight(1f).heightIn(min = 28.dp)
-                .clip(RoundedCornerShape(5.dp))
+            Modifier.weight(1f).heightIn(min = 30.dp)
+                .clip(RoundedCornerShape(6.dp))
                 .background(Neon.accent2)
                 .clickable { try { OverlayController.hide() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("HIDE", color = Color.White, fontSize = 10.sp,
+            Text("HIDE", color = Color.White, fontSize = 11.sp,
                 fontWeight = FontWeight.Bold)
         }
     }
@@ -344,14 +298,14 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(7.dp))
             .background(Neon.glass)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 7.dp),
+            .border(1.dp, Neon.stroke.copy(alpha = 0.4f), RoundedCornerShape(7.dp))
+            .padding(horizontal = 9.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Text(title, color = Neon.accent, fontSize = 9.sp,
-            fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+        Text(title, color = Neon.accent3, fontSize = 9.sp,
+            fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
         content()
     }
 }
@@ -362,7 +316,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp)) {
         Box(Modifier.size(14.dp).clip(RoundedCornerShape(3.dp))
             .background(if (v) Neon.accent else Color.Transparent)
-            .border(1.dp, if (v) Neon.accent else Neon.dim, RoundedCornerShape(3.dp))
+            .border(1.dp, if (v) Neon.accent3 else Neon.dim, RoundedCornerShape(3.dp))
             .clickable {
                 v = !v; try { onChange(v) } catch (_: Throwable) {}
             },
@@ -386,7 +340,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = Neon.text, fontSize = 10.sp,
                 modifier = Modifier.weight(1f))
-            Text(formatVal(v), color = Neon.accent, fontSize = 10.sp,
+            Text(formatVal(v), color = Neon.accent3, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold)
         }
         Slider(
@@ -396,7 +350,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             valueRange = range,
             modifier = Modifier.height(22.dp),
             colors = SliderDefaults.colors(
-                thumbColor = Neon.accent,
+                thumbColor = Neon.accent3,
                 activeTrackColor = Neon.accent,
                 inactiveTrackColor = Neon.dim.copy(alpha = 0.3f)
             )
@@ -404,29 +358,15 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
-@Composable private fun PrimaryBtn(label: String, onClick: () -> Unit) {
-    Box(
-        Modifier.fillMaxWidth().heightIn(min = 32.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(Brush.horizontalGradient(
-                listOf(Neon.accent2, Neon.accent)))
-            .clickable { try { onClick() } catch (_: Throwable) {} },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(label, color = Color.White, fontSize = 11.sp,
-            fontWeight = FontWeight.Bold)
-    }
-}
-
 @Composable private fun GhostBtn(label: String, onClick: () -> Unit) {
     Box(
         Modifier.fillMaxWidth().heightIn(min = 30.dp)
             .clip(RoundedCornerShape(5.dp))
-            .border(1.dp, Neon.accent, RoundedCornerShape(5.dp))
+            .border(1.dp, Neon.accent3, RoundedCornerShape(5.dp))
             .clickable { try { onClick() } catch (_: Throwable) {} },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Neon.accent, fontSize = 10.sp,
+        Text(label, color = Neon.accent3, fontSize = 10.sp,
             fontWeight = FontWeight.Bold)
     }
 }

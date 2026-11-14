@@ -20,21 +20,35 @@ object StateBridge {
     var aimReactionMs = 200;   set(v) { field = v; setI("aim_reaction_ms", v); flush() }
     var aimKpmCap     = 8;     set(v) { field = v; setI("aim_kpm_cap", v);     flush() }
     var aimMaxHsStreak= 3;     set(v) { field = v; setI("aim_max_hs_streak", v); flush() }
-    // CV aim loop (tracking contínuo)
-    var aimStickyMs   = 300;   set(v) { field = v; flush() }
 
+    // ESP
+    var espEnabled    = true;  set(v) { field = v; setB("esp_enabled", v);     flush() }
+    var espBox        = true;  set(v) { field = v; setB("esp_box", v);         flush() }
+    var espSkeleton   = true;  set(v) { field = v; setB("esp_skeleton", v);    flush() }
+    var espHealth     = true;  set(v) { field = v; setB("esp_health", v);      flush() }
+    var espDistance   = true;  set(v) { field = v; setB("esp_distance", v);    flush() }
+    var espName       = false; set(v) { field = v; setB("esp_name", v);        flush() }
+    var espMaxDist    = 200f;  set(v) { field = v; setF("esp_max_dist", v);    flush() }
+
+    // MISC
     var noRecoil      = true;  set(v) { field = v; setB("no_recoil", v);       flush() }
     var speedHack     = false; set(v) { field = v; setB("speed_hack", v);      flush() }
+    var speedMult     = 1.3f;  set(v) { field = v; setF("speed_mult", v);      flush() }
+    var flyMode       = false; set(v) { field = v; setB("fly_mode", v);        flush() }
+    var fastFire      = false; set(v) { field = v; setB("fast_fire", v);       flush() }
+    var wideView      = false; set(v) { field = v; setB("wide_view", v);       flush() }
+
+    // SYS
     var flagSecure    = true;  set(v) { field = v; setB("flag_secure", v);     flush() }
 
     fun panic() { try { NativeBridge.panic() } catch (_: Throwable) {} }
 
     // os setters nativos so funcionam dentro do FF (quando libffkit
-    // esta carregada via LSPatch). Na Calculadora pura (modo CV),
-    // a libffkit NAO esta carregada — sem try/catch, qualquer slider
-    // crasha com UnsatisfiedLinkError. O estado "real" vive nas
-    // properties Kotlin + state.json (IPC); as chamadas JNI sao
-    // redundantes locais pra quando esta dentro do FF.
+    // esta carregada via LSPosed). Na Calculadora pura, a libffkit
+    // NAO esta carregada — sem try/catch, qualquer slider crasha
+    // com UnsatisfiedLinkError. O estado "real" vive nas properties
+    // Kotlin + state.json (IPC); as chamadas JNI sao redundantes
+    // locais pra quando esta dentro do FF.
     @JvmStatic fun setB(k: String, v: Boolean) { try { setBNative(k, v) } catch (_: Throwable) {} }
     @JvmStatic fun setF(k: String, v: Float)   { try { setFNative(k, v) } catch (_: Throwable) {} }
     @JvmStatic fun setI(k: String, v: Int)     { try { setINative(k, v) } catch (_: Throwable) {} }

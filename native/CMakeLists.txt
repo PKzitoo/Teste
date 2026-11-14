@@ -11,7 +11,7 @@ add_library(ffkit SHARED
     features.cpp
     worker.cpp
     mask.cpp
-    entry_noroot.cpp
+    entry.cpp
 )
 
 target_link_libraries(ffkit log android)

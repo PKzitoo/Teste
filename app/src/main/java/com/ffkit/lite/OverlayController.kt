@@ -25,7 +25,6 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import kotlin.math.abs
 
 object OverlayController {
     private var wm: WindowManager? = null
@@ -70,11 +69,8 @@ object OverlayController {
             }
         } catch (_: Throwable) { return }
 
-        // host FrameLayout permite sobrepor uma handle de drag invisivel.
-        // CRUCIAL: setar os ViewTree owners no HOST (raiz do window), nao
-        // so no ComposeView. O Compose faz findViewTreeLifecycleOwner() a
-        // partir da view-raiz de attach = FrameLayout host. Sem isso,
-        // IllegalStateException: "ViewTreeLifecycleOwner not found".
+        // host com owners (Compose faz findViewTreeLifecycleOwner a partir
+        // da view-raiz de attach = host, nao do ComposeView interno)
         val host = FrameLayout(c).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeViewModelStoreOwner(lifecycleOwner)
@@ -90,10 +86,10 @@ object OverlayController {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 (if (StateBridge.flagSecure) WindowManager.LayoutParams.FLAG_SECURE else 0),
-            PixelFormat.TRANSLUCENT
+            PixelFormat.OPAQUE
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
 
-        // DragHandle: View transparente sobre a BARRA DE TITULO que captura
+        // DragHandle: View transparente sobre a barra de titulo que captura
         // o touch pro drag. Como fica POR CIMA do Compose, intercepta antes.
         val dragHandle = View(c).apply {
             setBackgroundColor(0x00000000)
@@ -101,7 +97,7 @@ object OverlayController {
         }
         host.addView(dragHandle, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
-            dpToPx(c, 32)   // so a barra superior arrasta
+            dpToPx(c, 32)
         ))
 
         try { wm?.addView(host, lpLocal); hostView = host; lp = lpLocal } catch (_: Throwable) {}
@@ -146,6 +142,9 @@ object OverlayController {
 
     @Composable
     private fun Bubble() {
-        FloatingActionButton(onClick = { bubble.value = false }) { Text("ff") }
+        FloatingActionButton(
+            onClick = { bubble.value = false },
+            containerColor = Neon.accent
+        ) { Text("ff", color = Neon.text) }
     }
 }
