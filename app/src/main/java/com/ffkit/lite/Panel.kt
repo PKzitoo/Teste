@@ -1,6 +1,7 @@
 package com.ffkit.lite
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -121,7 +122,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 // ============ CONTENT ============
 
-@Composable private fun Content(ctx: Context, tab: Int) {
+@Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
         Modifier.weight(1f).heightIn(min = 280.dp, max = 400.dp)
             .background(Neon.panel)
