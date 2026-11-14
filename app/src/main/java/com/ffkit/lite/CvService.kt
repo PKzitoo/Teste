@@ -51,9 +51,8 @@ class CvService : Service() {
     private fun captureLoop() {
         var last = 0L
         while (running) {
-            val image = reader?.acquireLatestImage() ?: run {
-                Thread.sleep(50); continue
-            }
+            val image = reader?.acquireLatestImage()
+            if (image == null) { Thread.sleep(50); continue }
             val now = System.currentTimeMillis()
             try {
                 if (now - last > 100) {   // ~10fps CV
