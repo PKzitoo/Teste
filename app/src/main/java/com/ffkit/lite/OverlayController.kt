@@ -8,6 +8,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +29,7 @@ import kotlin.math.abs
 
 object OverlayController {
     private var wm: WindowManager? = null
-    private var view: ComposeView? = null
+    private var hostView: FrameLayout? = null
     private var lp: WindowManager.LayoutParams? = null
     private var ctxRef: Context? = null
     private val bubble = mutableStateOf(true)
@@ -55,18 +56,31 @@ object OverlayController {
     }
     private val lifecycleOwner by lazy { OverlayOwners() }
 
+    /** Container que expoe a barra de arrastar via findViewById */
+    class DragHandleProvider(val context: Context) : FrameLayout(context) {
+        var onDragStart: () -> Unit = {}
+        var onDragDelta: (Float, Float) -> Unit = { _, _ -> }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     fun show() {
-        if (view != null) return
+        if (hostView != null) return
         val c = ctxRef ?: return
+
         val cv = try {
             ComposeView(c).apply {
                 setViewTreeLifecycleOwner(lifecycleOwner)
                 setViewTreeViewModelStoreOwner(lifecycleOwner)
                 setViewTreeSavedStateRegistryOwner(lifecycleOwner)
-                setContent { if (bubble.value) Bubble() else Panel(c) { bubble.value = true } }
+                setContent {
+                    if (bubble.value) Bubble()
+                    else Panel(c, onMinimize = { bubble.value = true })
+                }
             }
-        } catch (t: Throwable) { return }
+        } catch (_: Throwable) { return }
+
+        // host FrameLayout permite sobrepor uma handle de drag invisivel
+        val host = FrameLayout(c).apply { addView(cv) }
 
         val lpLocal = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -79,43 +93,55 @@ object OverlayController {
             PixelFormat.TRANSLUCENT
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
 
-        // drag handler: pressiona, segura, arrasta
-        var sx = 0; var sy = 0; var tx = 0f; var ty = 0f; var moved = false
-        cv.setOnTouchListener(View.OnTouchListener { _, ev ->
+        // DragHandle: View transparente sobre a BARRA DE TITULO que captura
+        // o touch pro drag. Como fica POR CIMA do Compose, intercepta antes.
+        val dragHandle = View(c).apply {
+            setBackgroundColor(0x00000000)
+            setOnTouchListener(makeDragListener(cv, lpLocal, host))
+        }
+        host.addView(dragHandle, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            dpToPx(c, 32)   // so a barra superior arrasta
+        ))
+
+        try { wm?.addView(host, lpLocal); hostView = host; lp = lpLocal } catch (_: Throwable) {}
+    }
+
+    private fun makeDragListener(cv: View, lpLocal: WindowManager.LayoutParams,
+                                 host: FrameLayout): View.OnTouchListener {
+        var sx = 0; var sy = 0; var tx = 0f; var ty = 0f
+        return View.OnTouchListener { _, ev ->
             when (ev.action) {
                 MotionEvent.ACTION_DOWN -> {
                     sx = lpLocal.x; sy = lpLocal.y
-                    tx = ev.rawX; ty = ev.rawY; moved = false
-                    false  // deixa o Compose receber tambem
+                    tx = ev.rawX; ty = ev.rawY; true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = ev.rawX - tx
                     val dy = ev.rawY - ty
-                    if (!moved && (abs(dx) > 12f || abs(dy) > 12f)) moved = true
-                    if (moved) {
-                        lpLocal.x = sx + dx.toInt()
-                        lpLocal.y = sy + dy.toInt()
-                        try { wm?.updateViewLayout(cv, lpLocal) } catch (_: Throwable) {}
-                    }
-                    moved
+                    lpLocal.x = sx + dx.toInt()
+                    lpLocal.y = sy + dy.toInt()
+                    try { wm?.updateViewLayout(host, lpLocal) } catch (_: Throwable) {}
+                    true
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> moved
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
                 else -> false
             }
-        })
-
-        try { wm?.addView(cv, lpLocal); view = cv; lp = lpLocal } catch (_: Throwable) {}
+        }
     }
+
+    private fun dpToPx(ctx: Context, dp: Int): Int =
+        (dp * ctx.resources.displayMetrics.density).toInt()
 
     fun hide() {
-        val v = view ?: return
+        val v = hostView ?: return
         try { wm?.removeView(v) } catch (_: Throwable) {}
-        view = null; lp = null
+        hostView = null; lp = null
     }
 
-    fun toggle() { if (view == null) show() else hide() }
+    fun toggle() { if (hostView == null) show() else hide() }
 
-    fun openPanel() { bubble.value = false; if (view == null) show() }
+    fun openPanel() { bubble.value = false; if (hostView == null) show() }
     fun minimize() { bubble.value = true }
 
     @Composable

@@ -26,9 +26,9 @@ import androidx.compose.ui.unit.sp
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
     Surface(
-        modifier = Modifier.width(300.dp),
+        modifier = Modifier.width(230.dp),
         color = Neon.bg,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, Neon.stroke),
     ) {
         Column {
@@ -45,35 +45,39 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ HEADER ============
 
 @Composable private fun Header(onMinimize: () -> Unit) {
+    // ALTURA 32dp — bate com dragHandle no OverlayController
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
+            .heightIn(min = 32.dp)
             .background(Brush.horizontalGradient(
                 listOf(Neon.accent2, Neon.accent)))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White))
-        Spacer(Modifier.width(8.dp))
-        Text("FFKIT", color = Color.White, fontSize = 11.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White))
         Spacer(Modifier.width(6.dp))
-        Text("@OLIVIA", color = Color.White.copy(alpha = 0.7f),
-            fontSize = 9.sp)
-        Spacer(Modifier.weight(1f))
-        HeaderBtn("_") { onMinimize() }
+        Text("FFKIT", color = Color.White, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Spacer(Modifier.width(4.dp))
+        Text("@OLIVIA", color = Color.White.copy(alpha = 0.7f),
+            fontSize = 8.sp)
+        Spacer(Modifier.weight(1f))
+        Text("⋮⋮", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+        Spacer(Modifier.width(6.dp))
+        HeaderBtn("_") { onMinimize() }
+        Spacer(Modifier.width(3.dp))
         HeaderBtn("X") { OverlayController.hide() }
     }
 }
 
 @Composable private fun HeaderBtn(label: String, onClick: () -> Unit) {
     Box(
-        Modifier.size(20.dp).clip(RoundedCornerShape(4.dp))
-            .background(Color.White.copy(alpha = 0.15f))
+        Modifier.size(18.dp).clip(RoundedCornerShape(3.dp))
+            .background(Color.White.copy(alpha = 0.18f))
             .clickable { try { onClick() } catch (_: Throwable) {} },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = 10.sp,
+        Text(label, color = Color.White, fontSize = 9.sp,
             fontWeight = FontWeight.Bold)
     }
 }
@@ -83,10 +87,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Sidebar(selected: Int, onSelect: (Int) -> Unit) {
     val items = listOf("A" to "AIM", "E" to "ESP", "C" to "CV", "S" to "SYS")
     Column(
-        Modifier.width(52.dp).fillMaxHeight()
+        Modifier.width(40.dp).fillMaxHeight()
             .background(Neon.sidebar)
-            .padding(vertical = 10.dp, horizontal = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(vertical = 6.dp, horizontal = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items.forEachIndexed { i, (icon, label) ->
@@ -97,26 +101,25 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun SideIcon(icon: String, label: String,
                                  selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) Neon.accent else Neon.accent2.copy(alpha = 0.4f)
+    val bg = if (selected) Neon.accent else Neon.accent2.copy(alpha = 0.35f)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(40.dp)
+        modifier = Modifier.width(32.dp)
     ) {
         Box(
-            Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+            Modifier.size(32.dp).clip(RoundedCornerShape(6.dp))
                 .background(bg)
                 .border(1.dp,
                     if (selected) Color.White.copy(alpha = 0.3f) else Color.Transparent,
-                    RoundedCornerShape(8.dp))
+                    RoundedCornerShape(6.dp))
                 .clickable { try { onClick() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text(icon, color = Color.White, fontSize = 18.sp,
+            Text(icon, color = Color.White, fontSize = 13.sp,
                 fontWeight = FontWeight.Black)
         }
-        Spacer(Modifier.height(2.dp))
         Text(label, color = if (selected) Neon.accent else Neon.dim,
-            fontSize = 7.sp, fontWeight = FontWeight.Bold)
+            fontSize = 6.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -124,11 +127,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
-        Modifier.weight(1f).heightIn(min = 280.dp, max = 400.dp)
+        Modifier.weight(1f).heightIn(min = 180.dp, max = 320.dp)
             .background(Neon.panel)
-            .padding(horizontal = 10.dp, vertical = 10.dp)
+            .padding(horizontal = 6.dp, vertical = 6.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         when (tab) {
             0 -> AimTab()

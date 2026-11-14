@@ -11,6 +11,8 @@ import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.util.DisplayMetrics
 import android.view.WindowManager
@@ -30,18 +32,30 @@ class CvService : Service() {
         val code  = intent?.getIntExtra("code", Activity.RESULT_OK) ?: Activity.RESULT_OK
         val data  = intent?.getParcelableExtra<Intent>("data") ?: return START_NOT_STICKY
         val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        mp = mpm.getMediaProjection(code, data) ?: return START_NOT_STICKY
+        try {
+            mp = mpm.getMediaProjection(code, data)
+        } catch (_: Throwable) { stopSelf(); return START_NOT_STICKY }
+        val proj = mp ?: run { stopSelf(); return START_NOT_STICKY }
+
+        // Android 14+: registerCallback eh OBRIGATORIO antes de createVirtualDisplay.
+        // Sem isso, SecurityException -> crash do app.
+        val cbThread = HandlerThread("ffkit-mp-cb").apply { start() }
+        proj.registerCallback(object : MediaProjection.Callback() {
+            override fun onStop() { running = false }
+        }, Handler(cbThread.looper))
 
         val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val dm = DisplayMetrics().also { wm.defaultDisplay.getRealMetrics(it) }
-        val w = dm.widthPixels / 2    // metade pra economizar
+        val w = dm.widthPixels / 2
         val h = dm.heightPixels / 2
         reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
-        vd = mp?.createVirtualDisplay(
-            "ffkit-cv", w, h, dm.densityDpi,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            reader!!.surface, null, null
-        )
+        try {
+            vd = proj.createVirtualDisplay(
+                "ffkit-cv", w, h, dm.densityDpi,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                reader!!.surface, null, null
+            )
+        } catch (_: Throwable) { stopSelf(); return START_NOT_STICKY }
 
         running = true
         Thread { captureLoop() }.start()
