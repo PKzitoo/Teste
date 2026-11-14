@@ -28,61 +28,102 @@ class CvService : Service() {
     private var running = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForegroundNotif()
+        try { startForegroundNotif() } catch (t: Throwable) {
+            android.util.Log.e("ffkit-cv", "foreground notif", t)
+            toast("CV notif: ${t.javaClass.simpleName}")
+            stopSelf(); return START_NOT_STICKY
+        }
         val code  = intent?.getIntExtra("code", Activity.RESULT_OK) ?: Activity.RESULT_OK
-        val data  = intent?.getParcelableExtra<Intent>("data") ?: return START_NOT_STICKY
+        val data  = intent?.getParcelableExtra<Intent>("data") ?: run {
+            toast("CV: data null"); stopSelf(); return START_NOT_STICKY
+        }
         val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         try {
             mp = mpm.getMediaProjection(code, data)
-        } catch (_: Throwable) { stopSelf(); return START_NOT_STICKY }
-        val proj = mp ?: run { stopSelf(); return START_NOT_STICKY }
+        } catch (t: Throwable) {
+            android.util.Log.e("ffkit-cv", "getMediaProjection", t)
+            toast("MP get: ${t.javaClass.simpleName}")
+            stopSelf(); return START_NOT_STICKY
+        }
+        val proj = mp ?: run {
+            toast("MP null"); stopSelf(); return START_NOT_STICKY
+        }
 
         // Android 14+: registerCallback eh OBRIGATORIO antes de createVirtualDisplay.
         // Sem isso, SecurityException -> crash do app.
-        val cbThread = HandlerThread("ffkit-mp-cb").apply { start() }
-        proj.registerCallback(object : MediaProjection.Callback() {
-            override fun onStop() { running = false }
-        }, Handler(cbThread.looper))
+        try {
+            val cbThread = HandlerThread("ffkit-mp-cb").apply { start() }
+            proj.registerCallback(object : MediaProjection.Callback() {
+                override fun onStop() { running = false }
+            }, Handler(cbThread.looper))
+        } catch (t: Throwable) {
+            android.util.Log.e("ffkit-cv", "registerCallback", t)
+            toast("MP cb: ${t.javaClass.simpleName}")
+            stopSelf(); return START_NOT_STICKY
+        }
 
         val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val dm = DisplayMetrics().also { wm.defaultDisplay.getRealMetrics(it) }
         val w = dm.widthPixels / 2
         val h = dm.heightPixels / 2
-        reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
+        try {
+            reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
+        } catch (t: Throwable) {
+            android.util.Log.e("ffkit-cv", "ImageReader", t)
+            toast("Reader: ${t.javaClass.simpleName}")
+            stopSelf(); return START_NOT_STICKY
+        }
         try {
             vd = proj.createVirtualDisplay(
                 "ffkit-cv", w, h, dm.densityDpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 reader!!.surface, null, null
             )
-        } catch (_: Throwable) { stopSelf(); return START_NOT_STICKY }
+        } catch (t: Throwable) {
+            android.util.Log.e("ffkit-cv", "createVirtualDisplay", t)
+            toast("VD: ${t.javaClass.simpleName}")
+            stopSelf(); return START_NOT_STICKY
+        }
 
         running = true
         Thread { captureLoop() }.start()
         return START_STICKY
     }
 
+    private fun toast(msg: String) {
+        try {
+            Handler(mainLooper).post {
+                android.widget.Toast.makeText(this, msg,
+                    android.widget.Toast.LENGTH_LONG).show()
+            }
+        } catch (_: Throwable) {}
+    }
+
     private fun captureLoop() {
         var last = 0L
         while (running) {
-            val image = reader?.acquireLatestImage()
-            if (image == null) { Thread.sleep(50); continue }
+            val image = try { reader?.acquireLatestImage() }
+                        catch (_: Throwable) { null }
+            if (image == null) { try { Thread.sleep(50) } catch (_: InterruptedException) { break }; continue }
             val now = System.currentTimeMillis()
             try {
                 if (now - last > 100) {   // ~10fps CV
                     val plane = image.planes[0]
-                    val bmp = Bitmap.createBitmap(
-                        plane.rowStride / plane.pixelStride, image.height,
-                        Bitmap.Config.ARGB_8888
-                    )
+                    val stride = plane.rowStride / plane.pixelStride
+                    val bmp = Bitmap.createBitmap(stride, image.height,
+                        Bitmap.Config.ARGB_8888)
                     bmp.copyPixelsFromBuffer(plane.buffer)
                     CvEngine.submit(bmp, 0)
                     last = now
                 }
-            } catch (_: Throwable) {}
-            image.close()
+            } catch (t: Throwable) {
+                android.util.Log.w("ffkit-cv", "captureLoop frame", t)
+            }
+            try { image.close() } catch (_: Throwable) {}
         }
-        vd?.release(); reader?.close(); mp?.stop()
+        try { vd?.release() } catch (_: Throwable) {}
+        try { reader?.close() } catch (_: Throwable) {}
+        try { mp?.stop() } catch (_: Throwable) {}
     }
 
     override fun onDestroy() { running = false; super.onDestroy() }

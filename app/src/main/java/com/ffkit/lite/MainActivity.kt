@@ -36,6 +36,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(s: Bundle?) {
         super.onCreate(s)
+        // listener do Shizuku: se o usuario aceitar o dialog, auto-ativa
+        // a acessibilidade pro PanicService (bypass da Restricted Settings)
+        ShizukuBridge.installListener {
+            try {
+                val ok = ShizukuBridge.autoEnableAccessibility(applicationContext)
+                ShizukuBridge.toast(applicationContext,
+                    if (ok) "Acessibilidade ON via Shizuku" else "Shizuku falhou")
+            } catch (_: Throwable) {}
+        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 var typed by remember { mutableStateOf("") }

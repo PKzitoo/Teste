@@ -238,6 +238,57 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 }
 
 @Composable private fun SysTab(ctx: Context) {
+    Section("SHIZUKU") {
+        var st by remember { mutableStateOf(ShizukuBridge.state()) }
+        LaunchedEffect(Unit) {
+            while (true) {
+                st = ShizukuBridge.state()
+                kotlinx.coroutines.delay(1500)
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Serviço", color = Neon.text, fontSize = 11.sp,
+                modifier = Modifier.weight(1f))
+            val (c, lbl) = when (st) {
+                ShizukuBridge.State.READY        -> Neon.accent3 to "PRONTO"
+                ShizukuBridge.State.NO_PERMISSION -> Color(0xFFFFB020) to "SEM PERM"
+                ShizukuBridge.State.UNAVAILABLE   -> Neon.danger to "OFF"
+            }
+            Box(Modifier.size(7.dp).clip(CircleShape).background(c))
+            Spacer(Modifier.width(4.dp))
+            Text(lbl, color = c, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(6.dp))
+        when (st) {
+            ShizukuBridge.State.UNAVAILABLE ->
+                Text("Abra o Shizuku e ative 'Depuração sem fio'.",
+                    color = Neon.dim, fontSize = 9.sp)
+            ShizukuBridge.State.NO_PERMISSION ->
+                PrimaryBtn("Pedir permissão Shizuku") {
+                    ShizukuBridge.requestPermission()
+                }
+            ShizukuBridge.State.READY -> {
+                PrimaryBtn("ON Acessibilidade (bypass)") {
+                    val ok = try {
+                        ShizukuBridge.autoEnableAccessibility(ctx)
+                    } catch (_: Throwable) { false }
+                    ShizukuBridge.toast(ctx,
+                        if (ok) "Acessibilidade ON" else "Falhou")
+                }
+                Spacer(Modifier.height(4.dp))
+                GhostBtn("OFF Acessibilidade") {
+                    val ok = try {
+                        ShizukuBridge.autoDisableAccessibility(ctx)
+                    } catch (_: Throwable) { false }
+                    ShizukuBridge.toast(ctx,
+                        if (ok) "Acessibilidade OFF" else "Falhou")
+                }
+                Spacer(Modifier.height(4.dp))
+                Text("Com Shizuku ON, o botão acima liga o PanicService sem passar pela tela bloqueada da HyperOS.",
+                    color = Neon.dim, fontSize = 9.sp)
+            }
+        }
+    }
     Section("STEALTH") {
         Sw("Bloquear print/record", StateBridge.flagSecure) { StateBridge.flagSecure = it }
         Spacer(Modifier.height(4.dp))

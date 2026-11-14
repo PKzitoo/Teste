@@ -40,6 +40,10 @@ dependencies {
     // ML Kit — pose detection (modelo via Play Services, 0 MB no APK)
     implementation 'com.google.mlkit:pose-detection:18.0.0-beta5'
 
+    // Shizuku — bypass de Restricted Settings sem root
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
+
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.appcompat:appcompat:1.7.0"
     implementation "androidx.activity:activity-compose:1.9.2"
