@@ -37,9 +37,8 @@ dependencies {
     // VA desligado nesta build — stubs locais em com.lody.virtual.*
     // (artefato do asLody nao esta publicado no jitpack; buildar do source
     //  se quiser container real)
-    // Xposed API via jitpack (rovo89/XposedBridge), compileOnly porque o
-    // VirtualXposed fornece as classes reais em runtime.
-    compileOnly 'com.github.rovo89:XposedBridge:93'
+    // Xposed API: stubs locais em de.robv.android.xposed.*
+    // (classes reais sao fornecidas pelo VirtualXposed em runtime)
 
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.appcompat:appcompat:1.7.0"
