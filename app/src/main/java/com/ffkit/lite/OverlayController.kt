@@ -56,12 +56,6 @@ object OverlayController {
     }
     private val lifecycleOwner by lazy { OverlayOwners() }
 
-    /** Container que expoe a barra de arrastar via findViewById */
-    class DragHandleProvider(val context: Context) : FrameLayout(context) {
-        var onDragStart: () -> Unit = {}
-        var onDragDelta: (Float, Float) -> Unit = { _, _ -> }
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     fun show() {
         if (hostView != null) return
