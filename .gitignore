@@ -1,5 +1,7 @@
 .gradle/
 build/
+.cxx/
+app/.cxx/
 .idea/
 local.properties
 *.apk

@@ -1,10 +1,10 @@
 package com.ffkit.lite
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private val pin = "1337"
 
     override fun onCreate(s: Bundle?) {
