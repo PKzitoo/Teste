@@ -63,9 +63,6 @@ object OverlayController {
 
         val cv = try {
             ComposeView(c).apply {
-                setViewTreeLifecycleOwner(lifecycleOwner)
-                setViewTreeViewModelStoreOwner(lifecycleOwner)
-                setViewTreeSavedStateRegistryOwner(lifecycleOwner)
                 setContent {
                     if (bubble.value) Bubble()
                     else Panel(c, onMinimize = { bubble.value = true })
@@ -73,8 +70,17 @@ object OverlayController {
             }
         } catch (_: Throwable) { return }
 
-        // host FrameLayout permite sobrepor uma handle de drag invisivel
-        val host = FrameLayout(c).apply { addView(cv) }
+        // host FrameLayout permite sobrepor uma handle de drag invisivel.
+        // CRUCIAL: setar os ViewTree owners no HOST (raiz do window), nao
+        // so no ComposeView. O Compose faz findViewTreeLifecycleOwner() a
+        // partir da view-raiz de attach = FrameLayout host. Sem isso,
+        // IllegalStateException: "ViewTreeLifecycleOwner not found".
+        val host = FrameLayout(c).apply {
+            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeViewModelStoreOwner(lifecycleOwner)
+            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+            addView(cv)
+        }
 
         val lpLocal = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
