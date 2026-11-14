@@ -10,8 +10,8 @@ android {
         applicationId "com.ffkit.lite"
         minSdk 26
         targetSdk 34
-        versionCode 16
-        versionName "16.0-root"
+        versionCode 17
+        versionName "17.0-lite-recoil"
         ndk { abiFilters 'arm64-v8a' }
     }
     buildFeatures { compose true }
@@ -36,6 +36,11 @@ android {
 dependencies {
     // Xposed API: stubs locais (de.robv.android.xposed.*) — resolvidos
     // em runtime pelo LSPosed, nossos stubs so servem no compile.
+
+    // Shizuku — pra rodar `input swipe/tap` via shell e bypassar
+    // Restricted Settings do HyperOS. NAO requer root.
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
 
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.appcompat:appcompat:1.7.0"

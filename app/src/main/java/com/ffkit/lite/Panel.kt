@@ -22,15 +22,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Painel ffkit v16-root.
- * 4 tabs: AIM / ESP / MISC / SYS
- * Fundo preto solido, acentos em azul escuro.
+ * Painel ffkit v17 (lite-recoil).
+ * 4 tabs: ASSIST / WEAPON / MACROS / SYS
+ * Fundo preto, acentos azul escuro.
  */
 @Composable
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
     Surface(
-        modifier = Modifier.width(240.dp),
+        modifier = Modifier.width(250.dp),
         color = Neon.bg,
         shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
@@ -49,7 +49,6 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ HEADER ============
 
 @Composable private fun Header(onMinimize: () -> Unit) {
-    // ALTURA 32dp — bate com dragHandle no OverlayController
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
@@ -63,7 +62,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Text("FFKIT", color = Color.White, fontSize = 11.sp,
             fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         Spacer(Modifier.width(5.dp))
-        Text("v16-root", color = Color.White.copy(alpha = 0.6f),
+        Text("v17-lite", color = Color.White.copy(alpha = 0.6f),
             fontSize = 8.sp)
         Spacer(Modifier.weight(1f))
         Text("⋮⋮", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
@@ -89,7 +88,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ SIDEBAR ============
 
 @Composable private fun Sidebar(selected: Int, onSelect: (Int) -> Unit) {
-    val items = listOf("A" to "AIM", "E" to "ESP", "M" to "MISC", "S" to "SYS")
+    val items = listOf("A" to "ASSIST", "W" to "WEAP", "M" to "MACRO", "S" to "SYS")
     Column(
         Modifier.width(44.dp).fillMaxHeight()
             .background(Neon.sidebar)
@@ -132,106 +131,154 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
-        Modifier.weight(1f).heightIn(min = 200.dp, max = 340.dp)
+        Modifier.weight(1f).heightIn(min = 220.dp, max = 360.dp)
             .background(Neon.panel)
             .padding(horizontal = 7.dp, vertical = 7.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         when (tab) {
-            0 -> AimTab()
-            1 -> EspTab()
-            2 -> MiscTab()
+            0 -> AssistTab(ctx)
+            1 -> WeaponTab()
+            2 -> MacroTab()
             3 -> SysTab(ctx)
         }
     }
 }
 
-@Composable private fun AimTab() {
-    Section("AIMBOT") {
-        Sw("Ativar aimbot",    StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
-        Sw("Aimbot Legit",     StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
-        Sw("Só mirando",       StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
-        Sw("Ignorar bots",     StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
-        BoneSelect()
-    }
-    Section("MIRA") {
-        Sl("Aim FOV",       30f..600f,   StateBridge.aimFov)    { StateBridge.aimFov = it }
-        Sl("Força",         1f..10f,     StateBridge.aimSmooth) { StateBridge.aimSmooth = it }
-    }
-    Section("HUMANIZAÇÃO") {
-        Sw("Osso aleatório", StateBridge.aimBoneRandom){ StateBridge.aimBoneRandom = it }
-        Sl("Erro %",      0f..50f,  StateBridge.aimMissRate * 100f) {
-            StateBridge.aimMissRate = it / 100f
-        }
-        Sl("Reação ms",   50f..500f, StateBridge.aimReactionMs.toFloat()) {
-            StateBridge.aimReactionMs = it.toInt()
-        }
-        Sl("Cap HS seg",  0f..10f,   StateBridge.aimMaxHsStreak.toFloat()) {
-            StateBridge.aimMaxHsStreak = it.toInt()
-        }
-    }
-}
+// ============ TAB: ASSIST ============
 
-@Composable private fun BoneSelect() {
-    val labels = listOf("Cabeça", "Pescoço", "Peito")
-    var sel by remember { mutableStateOf(StateBridge.aimBone) }
-    Column {
-        Text("Tipo de Aimbot", color = Neon.dim, fontSize = 10.sp)
-        Spacer(Modifier.height(3.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            labels.forEachIndexed { i, lb ->
-                val active = sel == i
-                Box(
-                    Modifier.weight(1f).heightIn(min = 28.dp)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(if (active) Neon.accent else Neon.glass)
-                        .border(1.dp,
-                            if (active) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
-                            RoundedCornerShape(5.dp))
-                        .clickable { sel = i; try { StateBridge.aimBone = i } catch (_: Throwable) {} },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(lb, color = Color.White, fontSize = 10.sp,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
-                }
+@Composable private fun AssistTab(ctx: Context) {
+    Section("SHIZUKU") {
+        var st by remember { mutableStateOf(ShizukuBridge.state()) }
+        LaunchedEffect(Unit) {
+            while (true) {
+                st = ShizukuBridge.state()
+                kotlinx.coroutines.delay(1500)
             }
         }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Status", color = Neon.text, fontSize = 11.sp,
+                modifier = Modifier.weight(1f))
+            val (c, lbl) = when (st) {
+                ShizukuBridge.State.READY         -> Neon.accent3 to "PRONTO"
+                ShizukuBridge.State.NO_PERMISSION -> Color(0xFFFFB020) to "SEM PERM"
+                ShizukuBridge.State.UNAVAILABLE   -> Neon.danger to "OFF"
+            }
+            Box(Modifier.size(8.dp).clip(CircleShape).background(c))
+            Spacer(Modifier.width(4.dp))
+            Text(lbl, color = c, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
+        if (st == ShizukuBridge.State.NO_PERMISSION) {
+            Spacer(Modifier.height(4.dp))
+            PrimaryBtn("Pedir permissão") { ShizukuBridge.requestPermission() }
+        }
+        if (st == ShizukuBridge.State.UNAVAILABLE) {
+            Text("Abra o Shizuku e ligue a Depuracao sem fio.",
+                color = Neon.dim, fontSize = 9.sp)
+        }
+    }
+
+    Section("BOTAO ASSIST (flutuante)") {
+        var visible by remember { mutableStateOf(AssistTrigger.isVisible()) }
+        PrimaryBtn(if (visible) "Esconder botão" else "Mostrar botão") {
+            AssistTrigger.toggle(ctx)
+            visible = AssistTrigger.isVisible()
+        }
+        Spacer(Modifier.height(3.dp))
+        Text("Segure o botão enquanto atira. Solte para parar.",
+            color = Neon.dim, fontSize = 9.sp)
+        Text("Para reposicionar: toque LONGO e arraste.",
+            color = Neon.dim, fontSize = 9.sp)
+
+        Spacer(Modifier.height(4.dp))
+        Sl("Tamanho (dp)",   48f..120f, StateBridge.triggerSize.toFloat()) {
+            StateBridge.triggerSize = it.toInt(); AssistTrigger.refresh(ctx)
+        }
+        Sl("Opacidade",      0.2f..1.0f, StateBridge.triggerOpacity) {
+            StateBridge.triggerOpacity = it; AssistTrigger.refresh(ctx)
+        }
+    }
+
+    Section("LOOK PAD (onde manda o swipe)") {
+        Text("Coordenadas do centro do \"pad de camera\" do FF.",
+            color = Neon.dim, fontSize = 9.sp)
+        Sl("X (px)", 100f..2400f, StateBridge.lookPadX.toFloat()) {
+            StateBridge.lookPadX = it.toInt()
+        }
+        Sl("Y (px)", 100f..1200f, StateBridge.lookPadY.toFloat()) {
+            StateBridge.lookPadY = it.toInt()
+        }
+        Text("Padrao: X=1800 Y=540 (OK pra POCO X5 Pro landscape).",
+            color = Neon.dim, fontSize = 9.sp)
     }
 }
 
-@Composable private fun EspTab() {
-    Section("ESP") {
-        Sw("Ativar ESP",       StateBridge.espEnabled)   { StateBridge.espEnabled = it }
-        Sw("Caixa 2D",         StateBridge.espBox)       { StateBridge.espBox = it }
-        Sw("Esqueleto",        StateBridge.espSkeleton)  { StateBridge.espSkeleton = it }
-        Sw("Barra de vida",    StateBridge.espHealth)    { StateBridge.espHealth = it }
-        Sw("Distância",        StateBridge.espDistance)  { StateBridge.espDistance = it }
-        Sw("Nome",             StateBridge.espName)      { StateBridge.espName = it }
-    }
-    Section("FILTRO") {
-        Sl("Distância max (m)", 20f..500f, StateBridge.espMaxDist) {
-            StateBridge.espMaxDist = it
+// ============ TAB: WEAPON ============
+
+@Composable private fun WeaponTab() {
+    Section("ARMA") {
+        var sel by remember { mutableStateOf(StateBridge.weaponIdx) }
+        val presets = WeaponPresets.LIST
+        // grid 3 colunas
+        for (chunk in presets.chunked(3)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                chunk.forEach { p ->
+                    val idx = presets.indexOf(p)
+                    val active = sel == idx
+                    Box(
+                        Modifier.weight(1f).heightIn(min = 30.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(if (active) Neon.accent else Neon.glass)
+                            .border(1.dp,
+                                if (active) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
+                                RoundedCornerShape(5.dp))
+                            .clickable { sel = idx; StateBridge.weaponIdx = idx },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(p.shortCode, color = Color.White, fontSize = 10.sp,
+                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+                    }
+                }
+                repeat(3 - chunk.size) { Spacer(Modifier.weight(1f)) }
+            }
+            Spacer(Modifier.height(3.dp))
         }
+        val p = WeaponPresets.byIndex(sel)
+        Spacer(Modifier.height(2.dp))
+        Text("\"${p.name}\": ${p.notes}", color = Neon.accent3, fontSize = 9.sp)
+    }
+
+    Section("INTENSIDADE") {
+        Sl("Força geral", 0.3f..2.0f, StateBridge.recoilIntensity) {
+            StateBridge.recoilIntensity = it
+        }
+        Text("1.0 = padrão. >1 = puxa mais forte. <1 = mais suave.",
+            color = Neon.dim, fontSize = 9.sp)
     }
 }
 
-@Composable private fun MiscTab() {
-    Section("ARMAS") {
-        Sw("No-Recoil",         StateBridge.noRecoil)    { StateBridge.noRecoil = it }
-        Sw("Fast Fire",         StateBridge.fastFire)    { StateBridge.fastFire = it }
+// ============ TAB: MACROS ============
+
+@Composable private fun MacroTab() {
+    Section("TIRO") {
+        Sw("Burst de 3 (cada tap)",  StateBridge.burstMode)  { StateBridge.burstMode = it }
+        Sw("Tap-fire pistolas",       StateBridge.tapFire)    { StateBridge.tapFire = it }
     }
-    Section("MOVIMENTO") {
-        Sw("Speed Hack",        StateBridge.speedHack)   { StateBridge.speedHack = it }
-        Sl("Multiplicador", 1f..3f, StateBridge.speedMult) {
-            StateBridge.speedMult = it
-        }
-        Sw("Fly Mode",          StateBridge.flyMode)     { StateBridge.flyMode = it }
+    Section("POSICIONAMENTO") {
+        Sw("Auto-crouch ao atirar",   StateBridge.autoCrouch) { StateBridge.autoCrouch = it }
+        Text("Agacha automatico durante tiro — menor hitbox.",
+            color = Neon.dim, fontSize = 9.sp)
     }
-    Section("CAMERA") {
-        Sw("Wide View (FOV)",   StateBridge.wideView)    { StateBridge.wideView = it }
+    Section("ROOT ONLY") {
+        Text("Aimbot / ESP / Wallhack / No-recoil mem / Speed / Fly",
+            color = Neon.dim, fontSize = 10.sp)
+        Text("Precisa de root + LSPosed. Ainda nao disponivel aq.",
+            color = Neon.dim, fontSize = 9.sp)
     }
 }
+
+// ============ TAB: SYS ============
 
 @Composable private fun SysTab(ctx: Context) {
     Section("STEALTH") {
@@ -244,10 +291,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         GhostBtn("Sumir dos recentes") { Stealth.hideRecents(ctx) }
     }
     Section("INFO") {
-        InfoRow("Versão", "16.0-root")
-        InfoRow("Modo", "LSPosed + Zygisk")
+        InfoRow("Versão", "17.0-lite")
+        InfoRow("Modo", "Recoil via Shizuku")
         InfoRow("PIN", "1337")
-        InfoRow("Panic", "Botão abaixo")
+        InfoRow("Root", "não necessário")
     }
 }
 
@@ -273,7 +320,9 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
                 .clip(RoundedCornerShape(6.dp))
                 .background(Neon.danger)
                 .clickable { try {
-                    StateBridge.panic(); OverlayController.hide()
+                    RecoilEngine.stop()
+                    AssistTrigger.hide()
+                    OverlayController.hide()
                 } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
@@ -358,6 +407,20 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
+@Composable private fun PrimaryBtn(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.fillMaxWidth().heightIn(min = 30.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(Brush.horizontalGradient(
+                listOf(Neon.accent2, Neon.accent)))
+            .clickable { try { onClick() } catch (_: Throwable) {} },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color.White, fontSize = 11.sp,
+            fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable private fun GhostBtn(label: String, onClick: () -> Unit) {
     Box(
         Modifier.fillMaxWidth().heightIn(min = 30.dp)
@@ -373,5 +436,5 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 private fun formatVal(v: Float): String {
     val r = v.toInt().toFloat()
-    return if (v == r) r.toInt().toString() else String.format("%.1f", v)
+    return if (v == r) r.toInt().toString() else String.format("%.2f", v)
 }

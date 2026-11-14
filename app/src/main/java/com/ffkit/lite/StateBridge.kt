@@ -41,6 +41,28 @@ object StateBridge {
     // SYS
     var flagSecure    = true;  set(v) { field = v; setB("flag_secure", v);     flush() }
 
+    // ===== RECOIL (no-root) =====
+    // selecao e intensidade do padrao de recuo
+    var weaponIdx       = 0;      set(v) { field = v; flush() }   // indice em WeaponPresets.LIST
+    var recoilIntensity = 1.0f;   set(v) { field = v; flush() }   // 0.3..2.0 (gain global)
+
+    // posicao do "look pad" do FF (onde a gente envia o swipe de recuo).
+    // valores padrao = ~meio da metade direita de uma tela 2400x1080.
+    var lookPadX        = 1800;   set(v) { field = v; flush() }
+    var lookPadY        = 540;    set(v) { field = v; flush() }
+
+    // botao flutuante ASSIST
+    var triggerEnabled  = true;   set(v) { field = v; flush() }
+    var triggerX        = 60;     set(v) { field = v; flush() }   // px absoluto
+    var triggerY        = 900;    set(v) { field = v; flush() }
+    var triggerSize     = 72;     set(v) { field = v; flush() }   // dp
+    var triggerOpacity  = 0.65f;  set(v) { field = v; flush() }   // 0.2..1.0
+
+    // macros extras
+    var burstMode       = false;  set(v) { field = v; flush() }   // tiro simples -> 3x
+    var autoCrouch      = false;  set(v) { field = v; flush() }
+    var tapFire         = false;  set(v) { field = v; flush() }   // pistolas rapido
+
     fun panic() { try { NativeBridge.panic() } catch (_: Throwable) {} }
 
     // os setters nativos so funcionam dentro do FF (quando libffkit
