@@ -9,11 +9,25 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -29,6 +43,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 object OverlayController {
     private var wm: WindowManager? = null
     private var hostView: FrameLayout? = null
+    private var dragHandle: View? = null
     private var lp: WindowManager.LayoutParams? = null
     private var ctxRef: Context? = null
     private val bubble = mutableStateOf(true)
@@ -64,13 +79,11 @@ object OverlayController {
             ComposeView(c).apply {
                 setContent {
                     if (bubble.value) Bubble()
-                    else Panel(c, onMinimize = { bubble.value = true })
+                    else Panel(c, onMinimize = { minimize() })
                 }
             }
         } catch (_: Throwable) { return }
 
-        // host com owners (Compose faz findViewTreeLifecycleOwner a partir
-        // da view-raiz de attach = host, nao do ComposeView interno)
         val host = FrameLayout(c).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeViewModelStoreOwner(lifecycleOwner)
@@ -89,41 +102,55 @@ object OverlayController {
             PixelFormat.OPAQUE
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
 
-        // DragHandle: View transparente sobre a barra de titulo que captura
-        // o touch pro drag. Como fica POR CIMA do Compose, intercepta antes.
-        val dragHandle = View(c).apply {
+        val dh = View(c).apply {
             setBackgroundColor(0x00000000)
             setOnTouchListener(makeDragListener(cv, lpLocal, host))
         }
-        host.addView(dragHandle, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            dpToPx(c, 32)
-        ))
+        // altura do handle depende do modo: bubble=inteiro, panel=so a barra
+        host.addView(dh, dragHandleParamsForMode(c))
+        dragHandle = dh
 
         try { wm?.addView(host, lpLocal); hostView = host; lp = lpLocal } catch (_: Throwable) {}
+    }
+
+    private fun dragHandleParamsForMode(c: Context): FrameLayout.LayoutParams =
+        if (bubble.value)
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                                     FrameLayout.LayoutParams.MATCH_PARENT)
+        else
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                                     dpToPx(c, 32))
+
+    private fun syncDragHandle() {
+        val c = ctxRef ?: return
+        val host = hostView ?: return
+        val dh = dragHandle ?: return
+        try {
+            dh.layoutParams = dragHandleParamsForMode(c)
+            host.requestLayout()
+        } catch (_: Throwable) {}
     }
 
     private fun makeDragListener(cv: View, lpLocal: WindowManager.LayoutParams,
                                  host: FrameLayout): View.OnTouchListener {
         var sx = 0; var sy = 0; var tx = 0f; var ty = 0f
         var dragging = false
-        val slopPx = (8 * (hostView?.context?.resources?.displayMetrics?.density ?: 3f)).toInt()
-        return View.OnTouchListener { v, ev ->
+        val density = hostView?.context?.resources?.displayMetrics?.density ?: 3f
+        val slopPx = (8 * density).toInt()
+        return View.OnTouchListener { _, ev ->
             when (ev.action) {
                 MotionEvent.ACTION_DOWN -> {
                     sx = lpLocal.x; sy = lpLocal.y
                     tx = ev.rawX; ty = ev.rawY
                     dragging = false
-                    // NAO consome ainda — deixa Compose receber o DOWN
-                    false
+                    false   // deixa Compose receber o DOWN
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = ev.rawX - tx
                     val dy = ev.rawY - ty
                     if (!dragging) {
-                        if (dx * dx + dy * dy > slopPx * slopPx) {
-                            dragging = true
-                        } else return@OnTouchListener false
+                        if (dx * dx + dy * dy > slopPx * slopPx) dragging = true
+                        else return@OnTouchListener false
                     }
                     lpLocal.x = sx + dx.toInt()
                     lpLocal.y = sy + dy.toInt()
@@ -133,7 +160,7 @@ object OverlayController {
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     val wasDragging = dragging
                     dragging = false
-                    wasDragging  // so consome o UP se realmente arrastou
+                    wasDragging
                 }
                 else -> false
             }
@@ -146,18 +173,20 @@ object OverlayController {
     fun hide() {
         val v = hostView ?: return
         try { wm?.removeView(v) } catch (_: Throwable) {}
-        hostView = null; lp = null
+        hostView = null; lp = null; dragHandle = null
     }
 
     fun toggle() { if (hostView == null) show() else hide() }
 
-    fun openPanel() { bubble.value = false; if (hostView == null) show() }
-    fun minimize() { bubble.value = true }
+    fun openPanel() {
+        bubble.value = false
+        if (hostView == null) show() else syncDragHandle()
+    }
+    fun minimize() {
+        bubble.value = true
+        syncDragHandle()
+    }
 
-    /**
-     * Re-aplica os flags do overlay (incluindo FLAG_SECURE) sem destruir
-     * a view. Usado quando o user liga/desliga "bloquear print" no painel.
-     */
     fun refreshFlags() {
         val lpLocal = lp ?: return
         val host = hostView ?: return
@@ -168,10 +197,6 @@ object OverlayController {
         try { wm?.updateViewLayout(host, lpLocal) } catch (_: Throwable) {}
     }
 
-    /**
-     * Desliga FLAG_SECURE por N segundos pra permitir screenshot, e
-     * religa automaticamente depois. Toast confirma pros 2 estados.
-     */
     fun allowPrintFor(ctx: Context, seconds: Int = 10) {
         val wasSecure = StateBridge.flagSecure
         StateBridge.flagSecure = false
@@ -191,11 +216,28 @@ object OverlayController {
         }, seconds * 1000L)
     }
 
+    /**
+     * Bolinha minimalista: circulo 48dp azul solido com "ff" branco
+     * no centro. Click instantaneo (sem ripple animation) = abre painel.
+     * Drag em qualquer parte dela (via dragHandle MATCH_PARENT) = move.
+     */
     @Composable
     private fun Bubble() {
-        FloatingActionButton(
-            onClick = { bubble.value = false },
-            containerColor = Neon.accent
-        ) { Text("ff", color = Neon.text) }
+        val interaction = remember { MutableInteractionSource() }
+        Box(
+            Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(Neon.accent)
+                .border(1.5.dp, Neon.accent3, CircleShape)
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null  // zero ripple -> resposta instantanea
+                ) { openPanel() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("ff", color = Color.White, fontSize = 15.sp,
+                fontWeight = FontWeight.Black)
+        }
     }
 }

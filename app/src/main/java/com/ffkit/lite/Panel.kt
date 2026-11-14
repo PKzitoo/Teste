@@ -371,24 +371,26 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun Sw(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
     var v by remember { mutableStateOf(value) }
+    val toggle: () -> Unit = {
+        v = !v; try { onChange(v) } catch (_: Throwable) {}
+    }
+    val noRipple = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Row(verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp)) {
-        Box(Modifier.size(14.dp).clip(RoundedCornerShape(3.dp))
+        modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp)
+            .clickable(interactionSource = noRipple, indication = null) { toggle() }
+            .padding(vertical = 2.dp)) {
+        // area de hit maior em volta do checkbox (18dp em vez de 14dp)
+        Box(Modifier.size(18.dp).clip(RoundedCornerShape(3.dp))
             .background(if (v) Neon.accent else Color.Transparent)
-            .border(1.dp, if (v) Neon.accent3 else Neon.dim, RoundedCornerShape(3.dp))
-            .clickable {
-                v = !v; try { onChange(v) } catch (_: Throwable) {}
-            },
+            .border(1.dp, if (v) Neon.accent3 else Neon.dim, RoundedCornerShape(3.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (v) Text("✓", color = Color.White, fontSize = 10.sp,
+            if (v) Text("✓", color = Color.White, fontSize = 12.sp,
                 fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.width(8.dp))
         Text(label, color = Neon.text, fontSize = 11.sp,
-            modifier = Modifier.weight(1f).clickable {
-                v = !v; try { onChange(v) } catch (_: Throwable) {}
-            })
+            modifier = Modifier.weight(1f))
     }
 }
 
@@ -418,11 +420,14 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 }
 
 @Composable private fun GhostBtn(label: String, onClick: () -> Unit) {
+    val noRipple = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Box(
-        Modifier.fillMaxWidth().heightIn(min = 30.dp)
+        Modifier.fillMaxWidth().heightIn(min = 32.dp)
             .clip(RoundedCornerShape(5.dp))
             .border(1.dp, Neon.accent3, RoundedCornerShape(5.dp))
-            .clickable { try { onClick() } catch (_: Throwable) {} },
+            .clickable(interactionSource = noRipple, indication = null) {
+                try { onClick() } catch (_: Throwable) {}
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = Neon.accent3, fontSize = 10.sp,
