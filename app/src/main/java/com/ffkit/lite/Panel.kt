@@ -1,13 +1,12 @@
 package com.ffkit.lite
 
 import android.content.Context
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -20,163 +19,284 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 @Composable
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
-    val tabs = listOf("AIM", "ESP", "CV", "WORLD", "UTIL", "STEALTH")
     Surface(
-        modifier = Modifier.width(260.dp),
+        modifier = Modifier.width(300.dp),
         color = Neon.bg,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
     ) {
-        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
-            // header compacto
-            Row(verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()) {
-                Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp))
-                    .background(Brush.linearGradient(listOf(Neon.accent, Neon.accent2))))
-                Spacer(Modifier.width(6.dp))
-                Text("ffkit", color = Neon.text, fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                MiniBtn("_", Neon.accent2) { onMinimize() }
-                Spacer(Modifier.width(4.dp))
-                MiniBtn("x", Neon.danger) { OverlayController.hide() }
+        Column {
+            Header(onMinimize)
+            Row {
+                Sidebar(tab) { tab = it }
+                Content(ctx, tab)
             }
-            Spacer(Modifier.height(6.dp))
-
-            // tabs horizontais compactas
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                tabs.forEachIndexed { i, s ->
-                    TabChip(s, tab == i) { tab = i }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-
-            // conteudo rolavel
-            Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
-                when (tab) {
-                    0 -> AimTab()
-                    1 -> EspTab()
-                    2 -> CvTab(ctx)
-                    3 -> WorldTab()
-                    4 -> UtilTab()
-                    5 -> StealthTab(ctx)
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Btn("PANIC", Neon.danger, Modifier.weight(1f)) {
-                    StateBridge.panic(); OverlayController.hide()
-                }
-                Btn("HIDE", Neon.accent3, Modifier.weight(1f)) { OverlayController.hide() }
-            }
-            Spacer(Modifier.height(4.dp))
-            Text("VOL+ 3x reabre  •  VOL- 3x PANIC", color = Neon.dim, fontSize = 9.sp)
+            Footer()
         }
     }
 }
 
-@Composable private fun AimTab() = SectionCol {
+// ============ HEADER ============
+
+@Composable private fun Header(onMinimize: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+            .background(Brush.horizontalGradient(
+                listOf(Neon.accent2, Neon.accent)))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White))
+        Spacer(Modifier.width(8.dp))
+        Text("FFKIT", color = Color.White, fontSize = 11.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Spacer(Modifier.width(6.dp))
+        Text("@OLIVIA", color = Color.White.copy(alpha = 0.7f),
+            fontSize = 9.sp)
+        Spacer(Modifier.weight(1f))
+        HeaderBtn("_") { onMinimize() }
+        Spacer(Modifier.width(4.dp))
+        HeaderBtn("X") { OverlayController.hide() }
+    }
+}
+
+@Composable private fun HeaderBtn(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.size(20.dp).clip(RoundedCornerShape(4.dp))
+            .background(Color.White.copy(alpha = 0.15f))
+            .clickable { try { onClick() } catch (_: Throwable) {} },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color.White, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold)
+    }
+}
+
+// ============ SIDEBAR ============
+
+@Composable private fun Sidebar(selected: Int, onSelect: (Int) -> Unit) {
+    val items = listOf("A" to "AIM", "E" to "ESP", "C" to "CV", "S" to "SYS")
+    Column(
+        Modifier.width(52.dp).fillMaxHeight()
+            .background(Neon.sidebar)
+            .padding(vertical = 10.dp, horizontal = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        items.forEachIndexed { i, (icon, label) ->
+            SideIcon(icon, label, selected == i) { onSelect(i) }
+        }
+    }
+}
+
+@Composable private fun SideIcon(icon: String, label: String,
+                                 selected: Boolean, onClick: () -> Unit) {
+    val bg = if (selected) Neon.accent else Neon.accent2.copy(alpha = 0.4f)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(40.dp)
+    ) {
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                .background(bg)
+                .border(1.dp,
+                    if (selected) Color.White.copy(alpha = 0.3f) else Color.Transparent,
+                    RoundedCornerShape(8.dp))
+                .clickable { try { onClick() } catch (_: Throwable) {} },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(icon, color = Color.White, fontSize = 18.sp,
+                fontWeight = FontWeight.Black)
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(label, color = if (selected) Neon.accent else Neon.dim,
+            fontSize = 7.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// ============ CONTENT ============
+
+@Composable private fun Content(ctx: Context, tab: Int) {
+    Column(
+        Modifier.weight(1f).heightIn(min = 280.dp, max = 400.dp)
+            .background(Neon.panel)
+            .padding(horizontal = 10.dp, vertical = 10.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        when (tab) {
+            0 -> AimTab()
+            1 -> EspTab()
+            2 -> CvTab(ctx)
+            3 -> SysTab(ctx)
+        }
+    }
+}
+
+@Composable private fun AimTab() {
     Section("AIMBOT") {
-        Sw("ligado",         StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
-        Sw("só mirando",     StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
-        Sw("só atirando",    StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
-        Sw("ignorar bots",   StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
+        Sw("Ativar aimbot",    StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
+        Sw("Aimbot Legit",     StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
+        Sw("Só mirando",       StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
+        Sw("Ignorar bots",     StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
+        BoneSelect()
     }
     Section("MIRA") {
-        Sl("fov",    30f..600f, StateBridge.aimFov)      { StateBridge.aimFov = it }
-        Sl("força",  1f..10f,   StateBridge.aimSmooth)   { StateBridge.aimSmooth = it }
-        Sl("sticky", 100f..1500f, StateBridge.aimStickyMs.toFloat()) {
+        Sl("Aim FOV",       30f..600f,   StateBridge.aimFov)    { StateBridge.aimFov = it }
+        Sl("Força",         1f..10f,     StateBridge.aimSmooth) { StateBridge.aimSmooth = it }
+        Sl("Stickiness ms", 100f..1500f, StateBridge.aimStickyMs.toFloat()) {
             StateBridge.aimStickyMs = it.toInt()
         }
     }
     Section("HUMANIZAÇÃO") {
-        Sw("osso aleatório", StateBridge.aimBoneRandom) { StateBridge.aimBoneRandom = it }
-        Sl("erro %",   0f..50f, StateBridge.aimMissRate * 100f) {
+        Sw("Osso aleatório", StateBridge.aimBoneRandom){ StateBridge.aimBoneRandom = it }
+        Sl("Erro %",      0f..50f,  StateBridge.aimMissRate * 100f) {
             StateBridge.aimMissRate = it / 100f
         }
-        Sl("reação",  50f..500f, StateBridge.aimReactionMs.toFloat()) {
+        Sl("Reação ms",   50f..500f, StateBridge.aimReactionMs.toFloat()) {
             StateBridge.aimReactionMs = it.toInt()
         }
-        Sl("cap HS",   0f..10f, StateBridge.aimMaxHsStreak.toFloat()) {
+        Sl("Cap HS seg",  0f..10f,   StateBridge.aimMaxHsStreak.toFloat()) {
             StateBridge.aimMaxHsStreak = it.toInt()
         }
     }
-    Section("OUTROS") {
-        Sw("sem recoil", StateBridge.noRecoil) { StateBridge.noRecoil = it }
+}
+
+@Composable private fun BoneSelect() {
+    val labels = listOf("Cabeça", "Pescoço", "Peito")
+    var sel by remember { mutableStateOf(StateBridge.aimBone) }
+    Column {
+        Text("Tipo de Aimbot", color = Neon.dim, fontSize = 10.sp)
+        Spacer(Modifier.height(3.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            labels.forEachIndexed { i, lb ->
+                val active = sel == i
+                Box(
+                    Modifier.weight(1f).heightIn(min = 26.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(if (active) Neon.accent else Neon.glass)
+                        .border(1.dp,
+                            if (active) Neon.accent else Neon.stroke.copy(alpha = 0.3f),
+                            RoundedCornerShape(5.dp))
+                        .clickable { sel = i; try { StateBridge.aimBone = i } catch (_: Throwable) {} },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(lb, color = Color.White, fontSize = 10.sp,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
     }
 }
 
-@Composable private fun EspTab() = SectionCol {
-    Section("VISUAL") {
-        Text("ESP está sempre ligado no modo CV", color = Neon.dim, fontSize = 10.sp)
+@Composable private fun EspTab() {
+    Section("ESP") {
+        Text("ESP ativo por padrão no modo CV.",
+            color = Neon.text, fontSize = 10.sp)
+        Text("Caixa + ponto na cabeça aparecem em cima de todo inimigo detectado em tempo real.",
+            color = Neon.dim, fontSize = 9.sp)
+    }
+    Section("FILTRO") {
+        Sw("Marcar bots", StateBridge.aimIgnoreBots.not().let { true }) { }
+        Text("distância max: 150m (pegada pelo CV engine)",
+            color = Neon.dim, fontSize = 9.sp)
     }
 }
 
-@Composable private fun CvTab(ctx: Context) = SectionCol {
+@Composable private fun CvTab(ctx: Context) {
     Section("CV ENGINE") {
-        StatusRow("status", if (CvBridge.running) "LIGADO" else "DESLIGADO",
-                  if (CvBridge.running) Neon.accent3 else Neon.dim)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Status", color = Neon.text, fontSize = 11.sp,
+                modifier = Modifier.weight(1f))
+            val live = CvBridge.running
+            Box(Modifier.size(7.dp).clip(CircleShape)
+                .background(if (live) Neon.accent3 else Neon.dim))
+            Spacer(Modifier.width(4.dp))
+            Text(if (live) "LIGADO" else "DESLIGADO",
+                color = if (live) Neon.accent3 else Neon.dim,
+                fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
         Spacer(Modifier.height(6.dp))
-        Btn("ligar CV (pede tela)", Neon.accent, Modifier.fillMaxWidth()) {
+        PrimaryBtn("Ativar CV (pede tela)") {
             if (!CvBridge.running) CvBridge.requestProjection(ctx)
         }
         Spacer(Modifier.height(4.dp))
-        Btn("desligar CV", Neon.dim, Modifier.fillMaxWidth()) { CvBridge.stop(ctx) }
-        Spacer(Modifier.height(6.dp))
-        Text("sem injeção, roda com FF original, 0 ban.", color = Neon.dim, fontSize = 9.sp)
+        GhostBtn("Desativar CV") { CvBridge.stop(ctx) }
+        Spacer(Modifier.height(4.dp))
+        Text("Sem injeção. Não muda nada no FF. Permissão de gravação de tela é inofensiva.",
+            color = Neon.dim, fontSize = 9.sp)
     }
 }
 
-@Composable private fun WorldTab() = SectionCol {
-    Section("MUNDO") {
-        Sw("speed hack",    StateBridge.speedHack) { StateBridge.speedHack = it }
-        Text("não use em ranked — ban rápido", color = Neon.danger, fontSize = 9.sp)
-    }
-}
-
-@Composable private fun UtilTab() = SectionCol {
-    Section("UTILS") {
-        Text("sem opções no modo CV", color = Neon.dim, fontSize = 10.sp)
-    }
-}
-
-@Composable private fun StealthTab(ctx: Context) = SectionCol {
+@Composable private fun SysTab(ctx: Context) {
     Section("STEALTH") {
-        Sw("bloquear print/record", StateBridge.flagSecure) { StateBridge.flagSecure = it }
+        Sw("Bloquear print/record", StateBridge.flagSecure) { StateBridge.flagSecure = it }
         Spacer(Modifier.height(4.dp))
-        Btn("trocar ícone do app", Neon.accent2, Modifier.fillMaxWidth()) { Disguise.cycle(ctx) }
+        GhostBtn("Trocar ícone") { Disguise.cycle(ctx) }
         Spacer(Modifier.height(4.dp))
-        Btn("limpar vestígios",    Neon.accent3, Modifier.fillMaxWidth()) { Stealth.wipe(ctx) }
+        GhostBtn("Limpar vestígios") { Stealth.wipe(ctx) }
         Spacer(Modifier.height(4.dp))
-        Btn("sumir dos recentes",  Neon.accent,  Modifier.fillMaxWidth()) { Stealth.hideRecents(ctx) }
+        GhostBtn("Sumir dos recentes") { Stealth.hideRecents(ctx) }
+    }
+    Section("ATALHOS") {
+        Text("VOL+ 3x reabre bolha", color = Neon.text, fontSize = 10.sp)
+        Text("VOL- 3x = PANIC total", color = Neon.text, fontSize = 10.sp)
+        Text("Toque longo pra arrastar o painel ou a bolha",
+            color = Neon.dim, fontSize = 9.sp)
     }
 }
 
-// ============ atomos UI ============
+// ============ FOOTER ============
 
-@Composable private fun SectionCol(content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+@Composable private fun Footer() {
+    Row(
+        Modifier.fillMaxWidth().background(Neon.sidebar)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            Modifier.weight(1f).heightIn(min = 28.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(Neon.danger)
+                .clickable { try {
+                    StateBridge.panic(); OverlayController.hide()
+                } catch (_: Throwable) {} },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("PANIC", color = Color.White, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold)
+        }
+        Box(
+            Modifier.weight(1f).heightIn(min = 28.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(Neon.accent2)
+                .clickable { try { OverlayController.hide() } catch (_: Throwable) {} },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("HIDE", color = Color.White, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold)
+        }
+    }
 }
+
+// ============ ATOMS ============
 
 @Composable private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(Neon.glass)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Text(title, color = Neon.accent, fontSize = 9.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.1.em)
+            fontWeight = FontWeight.Black, letterSpacing = 1.sp)
         content()
     }
 }
@@ -184,14 +304,23 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Sw(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
     var v by remember { mutableStateOf(value) }
     Row(verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp)) {
+        modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp)) {
+        Box(Modifier.size(14.dp).clip(RoundedCornerShape(3.dp))
+            .background(if (v) Neon.accent else Color.Transparent)
+            .border(1.dp, if (v) Neon.accent else Neon.dim, RoundedCornerShape(3.dp))
+            .clickable {
+                v = !v; try { onChange(v) } catch (_: Throwable) {}
+            },
+            contentAlignment = Alignment.Center
+        ) {
+            if (v) Text("✓", color = Color.White, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(8.dp))
         Text(label, color = Neon.text, fontSize = 11.sp,
-            modifier = Modifier.weight(1f))
-        Switch(
-            checked = v,
-            onCheckedChange = { v = it; try { onChange(it) } catch (_: Throwable) {} },
-            modifier = Modifier.scale(0.75f)
-        )
+            modifier = Modifier.weight(1f).clickable {
+                v = !v; try { onChange(v) } catch (_: Throwable) {}
+            })
     }
 }
 
@@ -202,7 +331,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = Neon.text, fontSize = 10.sp,
                 modifier = Modifier.weight(1f))
-            Text(formatVal(v), color = Neon.accent2, fontSize = 10.sp,
+            Text(formatVal(v), color = Neon.accent, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold)
         }
         Slider(
@@ -210,7 +339,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
                 v = it; try { onChange(it) } catch (_: Throwable) {}
             },
             valueRange = range,
-            modifier = Modifier.height(20.dp),
+            modifier = Modifier.height(22.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Neon.accent,
                 activeTrackColor = Neon.accent,
@@ -220,53 +349,30 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
-@Composable private fun StatusRow(label: String, value: String, color: Color) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = Neon.text, fontSize = 11.sp, modifier = Modifier.weight(1f))
-        Text(value, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable private fun Btn(label: String, color: Color,
-                             modifier: Modifier = Modifier, onClick: () -> Unit) {
+@Composable private fun PrimaryBtn(label: String, onClick: () -> Unit) {
     Box(
-        modifier = modifier
-            .heightIn(min = 30.dp)
+        Modifier.fillMaxWidth().heightIn(min = 32.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(color.copy(alpha = 0.18f))
-            .border(1.dp, color, RoundedCornerShape(6.dp))
-            .clickable { try { onClick() } catch (_: Throwable) {} }
-            .padding(vertical = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(label, color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable private fun MiniBtn(label: String, color: Color, onClick: () -> Unit) {
-    Box(
-        Modifier.size(22.dp)
-            .clip(RoundedCornerShape(5.dp))
-            .background(color.copy(alpha = 0.2f))
-            .border(1.dp, color, RoundedCornerShape(5.dp))
+            .background(Brush.horizontalGradient(
+                listOf(Neon.accent2, Neon.accent)))
             .clickable { try { onClick() } catch (_: Throwable) {} },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.White, fontSize = 11.sp,
+            fontWeight = FontWeight.Bold)
     }
 }
 
-@Composable private fun TabChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val color = if (selected) Neon.accent else Neon.dim
+@Composable private fun GhostBtn(label: String, onClick: () -> Unit) {
     Box(
-        Modifier.padding(horizontal = 2.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(if (selected) color.copy(alpha = 0.25f) else Color.Transparent)
-            .border(1.dp, color, RoundedCornerShape(4.dp))
-            .clickable { try { onClick() } catch (_: Throwable) {} }
-            .padding(horizontal = 6.dp, vertical = 3.dp)
+        Modifier.fillMaxWidth().heightIn(min = 30.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .border(1.dp, Neon.accent, RoundedCornerShape(5.dp))
+            .clickable { try { onClick() } catch (_: Throwable) {} },
+        contentAlignment = Alignment.Center
     ) {
-        Text(label, color = color, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Neon.accent, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold)
     }
 }
 
