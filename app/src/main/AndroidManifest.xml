@@ -82,5 +82,11 @@
         <service android:name=".CvService"
             android:foregroundServiceType="mediaProjection"
             android:exported="false"/>
+
+        <activity android:name=".ProjectionActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true"/>
     </application>
 </manifest>

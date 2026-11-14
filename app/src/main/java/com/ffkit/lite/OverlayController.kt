@@ -1,10 +1,12 @@
 package com.ffkit.lite
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Bundle
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Text
@@ -22,16 +24,12 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlin.math.abs
 
-/**
- * Singleton — gerencia bolha + painel flutuante.
- * MainActivity chama ensure(ctx)+show() quando o PIN entra.
- * Botao "esconder bolha" chama hide(); PanicService (VOL+ 3x)
- * chama toggle(). PANIC (VOL- 3x) chama hideFully().
- */
 object OverlayController {
     private var wm: WindowManager? = null
     private var view: ComposeView? = null
+    private var lp: WindowManager.LayoutParams? = null
     private var ctxRef: Context? = null
     private val bubble = mutableStateOf(true)
 
@@ -57,6 +55,7 @@ object OverlayController {
     }
     private val lifecycleOwner by lazy { OverlayOwners() }
 
+    @SuppressLint("ClickableViewAccessibility")
     fun show() {
         if (view != null) return
         val c = ctxRef ?: return
@@ -68,7 +67,8 @@ object OverlayController {
                 setContent { if (bubble.value) Bubble() else Panel(c) { bubble.value = true } }
             }
         } catch (t: Throwable) { return }
-        val lp = WindowManager.LayoutParams(
+
+        val lpLocal = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -78,12 +78,39 @@ object OverlayController {
                 (if (StateBridge.flagSecure) WindowManager.LayoutParams.FLAG_SECURE else 0),
             PixelFormat.TRANSLUCENT
         ).apply { gravity = Gravity.TOP or Gravity.START; x = 40; y = 180 }
-        try { wm?.addView(cv, lp); view = cv } catch (_: Throwable) {}
+
+        // drag handler: pressiona, segura, arrasta
+        var sx = 0; var sy = 0; var tx = 0f; var ty = 0f; var moved = false
+        cv.setOnTouchListener(View.OnTouchListener { _, ev ->
+            when (ev.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    sx = lpLocal.x; sy = lpLocal.y
+                    tx = ev.rawX; ty = ev.rawY; moved = false
+                    false  // deixa o Compose receber tambem
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = ev.rawX - tx
+                    val dy = ev.rawY - ty
+                    if (!moved && (abs(dx) > 12f || abs(dy) > 12f)) moved = true
+                    if (moved) {
+                        lpLocal.x = sx + dx.toInt()
+                        lpLocal.y = sy + dy.toInt()
+                        try { wm?.updateViewLayout(cv, lpLocal) } catch (_: Throwable) {}
+                    }
+                    moved
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> moved
+                else -> false
+            }
+        })
+
+        try { wm?.addView(cv, lpLocal); view = cv; lp = lpLocal } catch (_: Throwable) {}
     }
 
     fun hide() {
-        view?.let { wm?.removeView(it) }
-        view = null
+        val v = view ?: return
+        try { wm?.removeView(v) } catch (_: Throwable) {}
+        view = null; lp = null
     }
 
     fun toggle() { if (view == null) show() else hide() }

@@ -1,7 +1,9 @@
 package com.ffkit.lite
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.KeyEvent
+import android.view.accessibility.AccessibilityEvent
 
 /**
  * Acessibilidade: escuta teclas de volume globais.
@@ -15,6 +17,15 @@ class PanicService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         GestureEngine.service.set(this)
+        // runtime: habilita filter key events (o XML sozinho NAO basta
+        // em alguns Android, precisa setServiceInfo com a flag)
+        val info = serviceInfo
+        info.flags = info.flags or
+            AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS or
+            AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+        info.eventTypes = AccessibilityEvent.TYPES_ALL_MASK
+        info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
+        serviceInfo = info
     }
 
     override fun onKeyEvent(e: KeyEvent): Boolean {

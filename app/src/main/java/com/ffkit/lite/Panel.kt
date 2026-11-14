@@ -120,13 +120,12 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 }
 
 @Composable private fun CvTab(ctx: Context) = SectionCol {
-    val activity = ctx as? android.app.Activity
     Section("CV ENGINE") {
         StatusRow("status", if (CvBridge.running) "LIGADO" else "DESLIGADO",
                   if (CvBridge.running) Neon.accent3 else Neon.dim)
         Spacer(Modifier.height(6.dp))
         Btn("ligar CV (pede tela)", Neon.accent, Modifier.fillMaxWidth()) {
-            if (!CvBridge.running && activity != null) CvBridge.requestProjection(activity)
+            if (!CvBridge.running) CvBridge.requestProjection(ctx)
         }
         Spacer(Modifier.height(4.dp))
         Btn("desligar CV", Neon.dim, Modifier.fillMaxWidth()) { CvBridge.stop(ctx) }

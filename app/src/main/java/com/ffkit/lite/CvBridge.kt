@@ -13,10 +13,10 @@ object CvBridge {
     const val REQ_PROJECTION = 9988
     var running = false
 
-    fun requestProjection(activity: Activity) {
-        val mpm = activity.getSystemService(Context.MEDIA_PROJECTION_SERVICE)
-            as MediaProjectionManager
-        activity.startActivityForResult(mpm.createScreenCaptureIntent(), REQ_PROJECTION)
+    fun requestProjection(ctx: Context) {
+        val i = Intent(ctx, ProjectionActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        ctx.startActivity(i)
     }
 
     fun onProjectionResult(ctx: Context, code: Int, data: Intent?) {
