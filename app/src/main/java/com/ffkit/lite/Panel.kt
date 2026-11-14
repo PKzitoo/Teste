@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,18 +23,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Painel ffkit v18-root-legit.
- * Focado em uso com ROOT + LSPosed. Sem overlay de botao, sem Shizuku.
- * O painel escreve state.json e o modulo nativo dentro do FF le e aplica.
+ * ffkit v19-maxpack — TODAS as features no painel, cada uma com badge
+ * de risco pra tu saber. Deteccao tecnica eh minima (Shamiko esconde);
+ * ban vem de uso abusivo + report. Tu controla.
  *
- * 3 tabs: AIM / MISC / SYS.  ESP omitido de proposito (user quer "legit"
- * — nada visual atraves da parede).
+ * Tiers:
+ *   🟢 S  safe/invisivel  — pode deixar on sempre
+ *   🟡 M  medio/visivel   — usa com cautela
+ *   🔴 R  rage/magneto    — so em sala privada / se voce quer banir
  */
 @Composable
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
     Surface(
-        modifier = Modifier.width(220.dp),
+        modifier = Modifier.width(230.dp),
         color = Neon.bg,
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, Neon.stroke),
@@ -65,8 +68,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Text("FFKIT", color = Color.White, fontSize = 11.sp,
             fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         Spacer(Modifier.width(5.dp))
-        Text("v18-legit", color = Color.White.copy(alpha = 0.6f),
-            fontSize = 8.sp)
+        Text("v19-max", color = Color.White.copy(alpha = 0.6f), fontSize = 8.sp)
         Spacer(Modifier.weight(1f))
         Text("⋮⋮", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp)
         Spacer(Modifier.width(8.dp))
@@ -88,15 +90,22 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
-// ============ SIDEBAR ============
+// ============ SIDEBAR (5 tabs) ============
 
 @Composable private fun Sidebar(selected: Int, onSelect: (Int) -> Unit) {
-    val items = listOf("A" to "AIM", "M" to "MISC", "S" to "SYS")
+    val items = listOf(
+        "A" to "AIM",
+        "E" to "ESP",
+        "W" to "WEAP",
+        "M" to "MOVE",
+        "I" to "INTL",
+        "+" to "SAFE"
+    )
     Column(
         Modifier.width(38.dp)
             .background(Neon.sidebar)
-            .padding(vertical = 5.dp, horizontal = 3.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(vertical = 4.dp, horizontal = 3.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items.forEachIndexed { i, (icon, label) ->
@@ -113,11 +122,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         modifier = Modifier.width(32.dp)
     ) {
         Box(
-            Modifier.size(32.dp).clip(RoundedCornerShape(6.dp))
+            Modifier.size(30.dp).clip(RoundedCornerShape(5.dp))
                 .background(bg)
                 .border(1.dp,
                     if (selected) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
-                    RoundedCornerShape(6.dp))
+                    RoundedCornerShape(5.dp))
                 .clickable { try { onClick() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
@@ -133,7 +142,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
     Column(
-        Modifier.weight(1f).heightIn(max = 320.dp)
+        Modifier.weight(1f).heightIn(max = 340.dp)
             .background(Neon.panel)
             .padding(horizontal = 5.dp, vertical = 5.dp)
             .verticalScroll(rememberScrollState()),
@@ -141,8 +150,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     ) {
         when (tab) {
             0 -> AimTab()
-            1 -> MiscTab()
-            2 -> SysTab(ctx)
+            1 -> EspTab()
+            2 -> WeaponTab()
+            3 -> MoveTab()
+            4 -> IntelTab()
+            5 -> SafeTab(ctx)
         }
     }
 }
@@ -150,42 +162,210 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ TAB: AIM ============
 
 @Composable private fun AimTab() {
-    Section("AIMBOT") {
-        Sw("Ativar aimbot",    StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
-        Sw("Só atirando",      StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
-        Sw("Só mirando (ADS)", StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
-        Sw("Ignorar bots",     StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
+    Section("AIMBOT", tier = T.S) {
+        TierSw("Ativar aimbot",    T.S, StateBridge.aimEnabled)    { StateBridge.aimEnabled = it }
+        TierSw("Só atirando",      T.S, StateBridge.aimOnFire)     { StateBridge.aimOnFire = it }
+        TierSw("Só mirando (ADS)", T.S, StateBridge.aimOnScope)    { StateBridge.aimOnScope = it }
+        TierSw("Ignorar bots",     T.S, StateBridge.aimIgnoreBots) { StateBridge.aimIgnoreBots = it }
+        TierSw("Prediction",       T.S, StateBridge.aimPrediction) { StateBridge.aimPrediction = it }
+        TierSw("Multi-target",     T.M, StateBridge.aimMultiTarget){ StateBridge.aimMultiTarget = it }
+        TierSw("Silent aim",       T.R, StateBridge.aimSilent)     { StateBridge.aimSilent = it }
     }
-
-    Section("MIRA") {
+    Section("MIRA", tier = T.S) {
         Sl("Aim FOV",   30f..600f, StateBridge.aimFov)    { StateBridge.aimFov = it }
         Sl("Suavidade", 1f..10f,   StateBridge.aimSmooth) { StateBridge.aimSmooth = it }
         Sl("Reação ms", 50f..500f, StateBridge.aimReactionMs.toFloat()) {
             StateBridge.aimReactionMs = it.toInt()
         }
     }
-
-    Section("PADRÃO DE TIRO (anti-ban)") {
+    Section("PADRÃO DE TIRO", tier = T.S) {
         PatternPreview()
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
         Sl("Tapas (HS)",  0f..10f, StateBridge.shotHeadCount.toFloat()) {
             StateBridge.shotHeadCount = it.toInt()
         }
         Sl("Peitos",      0f..10f, StateBridge.shotBodyCount.toFloat()) {
             StateBridge.shotBodyCount = it.toInt()
         }
-        Spacer(Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Preset("BOT\n5H+0P", 5, 0)
-            Preset("AGGR\n3H+1P", 3, 1)
-            Preset("LEGIT\n2H+2P", 2, 2)
-            Preset("SAFE\n1H+3P", 1, 3)
-        }
         Spacer(Modifier.height(3.dp))
-        Text("BOT = banna em dias. SAFE = quase nunca banna mas mata devagar. LEGIT = bom meio-termo pra ranqueada.",
-            color = Neon.dim, fontSize = 9.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Preset("BOT",   5, 0)
+            Preset("AGGR",  3, 1)
+            Preset("LEGIT", 2, 2)
+            Preset("SAFE",  1, 3)
+        }
     }
 }
+
+// ============ TAB: ESP ============
+
+@Composable private fun EspTab() {
+    Section("MODO ESP", tier = T.M) {
+        var mode by remember { mutableStateOf(StateBridge.espMode) }
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            EspModeBtn("OFF",   0, mode) { mode = 0; StateBridge.espMode = 0 }
+            EspModeBtn("LEGIT", 1, mode) { mode = 1; StateBridge.espMode = 1 }
+            EspModeBtn("FULL",  2, mode) { mode = 2; StateBridge.espMode = 2 }
+            EspModeBtn("AUDIO", 3, mode) { mode = 3; StateBridge.espMode = 3 }
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(when (mode) {
+            0 -> "Desligado"
+            1 -> "LEGIT: so <80m, delayed 300ms, oculto scopando"
+            2 -> "FULL: wallhack completo (RISCO ALTO)"
+            3 -> "AUDIO: beep sutil quando inimigo <50m"
+            else -> ""
+        }, color = Neon.accent3, fontSize = 9.sp)
+    }
+    if (StateBridge.espMode in listOf(1, 2)) {
+        Section("ESP VISUAL", tier = if (StateBridge.espMode == 2) T.R else T.M) {
+            TierSw("Caixa 2D",       if (StateBridge.espMode==2) T.R else T.M, StateBridge.espBox)       { StateBridge.espBox = it }
+            TierSw("Esqueleto",      T.R, StateBridge.espSkeleton)  { StateBridge.espSkeleton = it }
+            TierSw("Barra de vida",  T.M, StateBridge.espHealth)    { StateBridge.espHealth = it }
+            TierSw("Distância",      T.M, StateBridge.espDistance)  { StateBridge.espDistance = it }
+            TierSw("Nome",           T.M, StateBridge.espName)      { StateBridge.espName = it }
+            TierSw("Esconder scope", T.S, StateBridge.espHideScope) { StateBridge.espHideScope = it }
+            Sl("Distância max (m)", 20f..500f, StateBridge.espMaxDist) {
+                StateBridge.espMaxDist = it
+            }
+            Sl("Delay ms", 0f..1000f, StateBridge.espDelayMs.toFloat()) {
+                StateBridge.espDelayMs = it.toInt()
+            }
+        }
+    }
+    if (StateBridge.espMode == 3) {
+        Section("ESP AUDIO", tier = T.S) {
+            Sl("Distância beep (m)", 10f..150f, StateBridge.espAudioThr) {
+                StateBridge.espAudioThr = it
+            }
+            Text("Quanto mais perto, mais frequente o beep. So tu ouve.",
+                color = Neon.dim, fontSize = 9.sp)
+        }
+    }
+}
+
+@Composable private fun EspModeBtn(label: String, idx: Int, cur: Int, onClick: () -> Unit) {
+    val sel = cur == idx
+    Box(
+        Modifier.width(44.dp).heightIn(min = 28.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .background(if (sel) Neon.accent else Neon.glass)
+            .border(1.dp, if (sel) Neon.accent3 else Neon.stroke.copy(alpha = 0.3f),
+                RoundedCornerShape(5.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = Color.White, fontSize = 9.sp,
+            fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+    }
+}
+
+// ============ TAB: WEAPON ============
+
+@Composable private fun WeaponTab() {
+    Section("INVISIVEL (patch mem)", tier = T.S) {
+        TierSw("No-Recoil",         T.S, StateBridge.noRecoil)     { StateBridge.noRecoil = it }
+        TierSw("No-Spread",         T.S, StateBridge.noSpread)     { StateBridge.noSpread = it }
+        TierSw("Instant Reload",    T.S, StateBridge.noReload)     { StateBridge.noReload = it }
+    }
+    Section("VISIVEL", tier = T.M) {
+        TierSw("Fast Fire",          T.M, StateBridge.fastFire)    { StateBridge.fastFire = it }
+        TierSw("Infinite Ammo",      T.M, StateBridge.infiniteAmmo){ StateBridge.infiniteAmmo = it }
+    }
+    Section("RAGE (report magnet)", tier = T.R) {
+        TierSw("One-Shot HS",        T.R, StateBridge.oneShotHs)   { StateBridge.oneShotHs = it }
+        TierSw("Any gun = AWM dano", T.R, StateBridge.anyGunAwm)   { StateBridge.anyGunAwm = it }
+        TierSw("Pierce Walls",       T.R, StateBridge.pierceWalls) { StateBridge.pierceWalls = it }
+        TierSw("Magic Bullet",       T.R, StateBridge.magicBullet) { StateBridge.magicBullet = it }
+    }
+}
+
+// ============ TAB: MOVE ============
+
+@Composable private fun MoveTab() {
+    Section("INVISIVEL", tier = T.S) {
+        TierSw("No fall damage",    T.S, StateBridge.noFallDmg)    { StateBridge.noFallDmg = it }
+        TierSw("Water breath max",  T.S, StateBridge.waterBreath)  { StateBridge.waterBreath = it }
+    }
+    Section("VISIVEL", tier = T.M) {
+        TierSw("Speed Hack",        T.M, StateBridge.speedHack)    { StateBridge.speedHack = it }
+        if (StateBridge.speedHack) {
+            Sl("Mult", 1f..3f, StateBridge.speedMult)              { StateBridge.speedMult = it }
+        }
+        TierSw("Super Jump",        T.M, StateBridge.superJump)    { StateBridge.superJump = it }
+        TierSw("Bhop",              T.M, StateBridge.bhop)         { StateBridge.bhop = it }
+        TierSw("Instant Revive",    T.M, StateBridge.instantRevive){ StateBridge.instantRevive = it }
+        TierSw("Wide View (FOV)",   T.M, StateBridge.wideView)     { StateBridge.wideView = it }
+    }
+    Section("RAGE", tier = T.R) {
+        TierSw("Fly Mode",          T.R, StateBridge.flyMode)      { StateBridge.flyMode = it }
+        TierSw("No Collision (noclip)", T.R, StateBridge.noCollision) { StateBridge.noCollision = it }
+    }
+}
+
+// ============ TAB: INTEL ============
+
+@Composable private fun IntelTab() {
+    Section("INFO (baixo risco)", tier = T.S) {
+        TierSw("Grenade Alert",     T.S, StateBridge.grenadeAlert) { StateBridge.grenadeAlert = it }
+        TierSw("Zone Timer",        T.S, StateBridge.zoneTimer)    { StateBridge.zoneTimer = it }
+        TierSw("Airdrop Tracker",   T.S, StateBridge.airdropTracker) { StateBridge.airdropTracker = it }
+    }
+    Section("INFO (medio risco)", tier = T.M) {
+        TierSw("Loot ESP",          T.M, StateBridge.lootEsp)      { StateBridge.lootEsp = it }
+        TierSw("Vehicle ESP",       T.M, StateBridge.vehicleEsp)   { StateBridge.vehicleEsp = it }
+        TierSw("Mini-map enemies",  T.M, StateBridge.miniMapEnemy) { StateBridge.miniMapEnemy = it }
+        TierSw("Kill Feed Spy",     T.M, StateBridge.killFeedSpy)  { StateBridge.killFeedSpy = it }
+    }
+}
+
+// ============ TAB: SAFE ============
+
+@Composable private fun SafeTab(ctx: Context) {
+    Section("PROTECAO (deixa sempre ON)", tier = T.S) {
+        TierSw("Spectator warning",  T.S, StateBridge.spectatorWarn) { StateBridge.spectatorWarn = it }
+        TierSw("Streamer mode (hide em OBS)", T.S, StateBridge.streamerMode) { StateBridge.streamerMode = it }
+        TierSw("HS cap dinâmico",    T.S, StateBridge.hsCapDynamic)  { StateBridge.hsCapDynamic = it }
+        TierSw("Replay sanitizer",   T.S, StateBridge.replaySanit)   { StateBridge.replaySanit = it }
+        TierSw("Signature rotator",  T.S, StateBridge.signatureRot)  { StateBridge.signatureRot = it }
+    }
+    Section("AUTO-OFF", tier = T.S) {
+        Sl("Desliga aim apos N kills (0=off)", 0f..20f, StateBridge.autoOffKills.toFloat()) {
+            StateBridge.autoOffKills = it.toInt()
+        }
+        Text("Depois de X kills na partida, aim desliga sozinho ate a proxima.",
+            color = Neon.dim, fontSize = 9.sp)
+    }
+    Section("STEALTH", tier = T.S) {
+        TierSw("Bloquear print/record", T.S, StateBridge.flagSecure) {
+            StateBridge.flagSecure = it
+            OverlayController.refreshFlags()
+        }
+        Spacer(Modifier.height(3.dp))
+        GhostBtn("📷 LIBERAR PRINT (10s)") { OverlayController.allowPrintFor(ctx, 10) }
+        Spacer(Modifier.height(3.dp))
+        GhostBtn("Trocar ícone") { Disguise.cycle(ctx) }
+        Spacer(Modifier.height(3.dp))
+        GhostBtn("Limpar vestígios") { Stealth.wipe(ctx) }
+        Spacer(Modifier.height(3.dp))
+        GhostBtn("Sumir dos recentes") { Stealth.hideRecents(ctx) }
+    }
+    Section("INFO", tier = T.S) {
+        InfoRow("Versão",  "19.0-maxpack")
+        InfoRow("Modo",    "LSPosed + Zygisk")
+        InfoRow("PIN",     "1337")
+        InfoRow("Tiers",   "🟢 safe  🟡 médio  🔴 rage")
+    }
+}
+
+@Composable private fun InfoRow(k: String, v: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(k, color = Neon.dim, fontSize = 10.sp, modifier = Modifier.weight(1f))
+        Text(v, color = Neon.accent3, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// ============ PATTERN HELPERS ============
 
 @Composable private fun PatternPreview() {
     val h = StateBridge.shotHeadCount
@@ -203,29 +383,25 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             }, fontSize = 12.sp, fontWeight = FontWeight.Black)
         }
         Spacer(Modifier.height(3.dp))
-        // visual pattern
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             repeat(h.coerceAtMost(10)) {
-                Box(Modifier.size(width = 16.dp, height = 10.dp)
+                Box(Modifier.size(width = 14.dp, height = 8.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Neon.accent3))
             }
             repeat(b.coerceAtMost(10)) {
-                Box(Modifier.size(width = 16.dp, height = 10.dp)
+                Box(Modifier.size(width = 14.dp, height = 8.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Neon.dim))
             }
         }
-        Spacer(Modifier.height(2.dp))
-        Text("verde=cabeça  cinza=peito  (repete em loop)",
-            color = Neon.dim, fontSize = 8.sp)
     }
 }
 
 @Composable private fun RowScope.Preset(label: String, h: Int, b: Int) {
     val sel = StateBridge.shotHeadCount == h && StateBridge.shotBodyCount == b
     Box(
-        Modifier.weight(1f).heightIn(min = 36.dp)
+        Modifier.weight(1f).heightIn(min = 32.dp)
             .clip(RoundedCornerShape(5.dp))
             .background(if (sel) Neon.accent else Neon.glass)
             .border(1.dp,
@@ -237,84 +413,9 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = 8.sp,
-            fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-    }
-}
-
-// ============ TAB: MISC ============
-
-@Composable private fun MiscTab() {
-    Section("ARMAS (patch memoria)") {
-        Sw("No-Recoil (auto todas armas)", StateBridge.noRecoil) { StateBridge.noRecoil = it }
-        Sw("Fast Fire",                     StateBridge.fastFire)  { StateBridge.fastFire = it }
-        Spacer(Modifier.height(3.dp))
-        Text("No-recoil roda direto na memoria: detecta a arma que vc segura e zera o recuo. Zero tuning, zero botao.",
-            color = Neon.dim, fontSize = 9.sp)
-    }
-    Section("CAMERA") {
-        Sw("Wide View (FOV)",   StateBridge.wideView)    { StateBridge.wideView = it }
-    }
-    Section("USO AGRESSIVO (ban rapido)") {
-        Sw("Speed Hack",        StateBridge.speedHack)   { StateBridge.speedHack = it }
-        if (StateBridge.speedHack) {
-            Sl("Mult", 1f..3f, StateBridge.speedMult) { StateBridge.speedMult = it }
-        }
-        Sw("Fly Mode",          StateBridge.flyMode)     { StateBridge.flyMode = it }
-        Spacer(Modifier.height(3.dp))
-        Text("⚠ Speed/Fly sao MUITO visiveis. Use so em privada.",
-            color = Neon.danger, fontSize = 9.sp)
-    }
-    Section("ESP (visual)") {
-        Sw("ESP ativo",         StateBridge.espEnabled)  { StateBridge.espEnabled = it }
-        if (StateBridge.espEnabled) {
-            Sw("Caixa 2D",       StateBridge.espBox)       { StateBridge.espBox = it }
-            Sw("Barra de vida",  StateBridge.espHealth)    { StateBridge.espHealth = it }
-            Sw("Distância",      StateBridge.espDistance)  { StateBridge.espDistance = it }
-            Sw("Nome",           StateBridge.espName)      { StateBridge.espName = it }
-            Sl("Distância max", 20f..500f, StateBridge.espMaxDist) {
-                StateBridge.espMaxDist = it
-            }
-        }
-        Spacer(Modifier.height(3.dp))
-        Text("ESP = wall. Se o inimigo report, replays mostram tu virando pra ele por paredes.",
-            color = Neon.dim, fontSize = 9.sp)
-    }
-}
-
-// ============ TAB: SYS ============
-
-@Composable private fun SysTab(ctx: Context) {
-    Section("STEALTH") {
-        Sw("Bloquear print/record", StateBridge.flagSecure) {
-            StateBridge.flagSecure = it
-            OverlayController.refreshFlags()   // aplica na hora
-        }
-        Spacer(Modifier.height(4.dp))
-        GhostBtn("📷 LIBERAR PRINT (10s)") {
-            OverlayController.allowPrintFor(ctx, 10)
-        }
-        Spacer(Modifier.height(4.dp))
-        GhostBtn("Trocar ícone") { Disguise.cycle(ctx) }
-        Spacer(Modifier.height(4.dp))
-        GhostBtn("Limpar vestígios") { Stealth.wipe(ctx) }
-        Spacer(Modifier.height(4.dp))
-        GhostBtn("Sumir dos recentes") { Stealth.hideRecents(ctx) }
-    }
-    Section("INFO") {
-        InfoRow("Versão",  "18.0-legit")
-        InfoRow("Modo",    "LSPosed + Zygisk")
-        InfoRow("PIN",     "1337")
-        InfoRow("Panic",   "Botão abaixo")
-    }
-}
-
-@Composable private fun InfoRow(k: String, v: String) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(k, color = Neon.dim, fontSize = 10.sp,
-            modifier = Modifier.weight(1f))
-        Text(v, color = Neon.accent3, fontSize = 10.sp,
-            fontWeight = FontWeight.Bold)
+        Text("$label\n${h}H+${b}P", color = Color.White, fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -351,9 +452,16 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
-// ============ ATOMS ============
+// ============ TIER SYSTEM ============
 
-@Composable private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
+private enum class T(val color: Color, val dot: String) {
+    S(Color(0xFF22C55E), "●"),   // verde safe
+    M(Color(0xFFFBBF24), "●"),   // amarelo medio
+    R(Color(0xFFEF4444), "●")    // vermelho rage
+}
+
+@Composable private fun Section(title: String, tier: T,
+                                content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
@@ -362,34 +470,39 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             .padding(horizontal = 7.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(title, color = Neon.accent3, fontSize = 9.sp,
-            fontWeight = FontWeight.Black, letterSpacing = 1.1.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(tier.dot, color = tier.color, fontSize = 11.sp,
+                fontWeight = FontWeight.Black)
+            Spacer(Modifier.width(5.dp))
+            Text(title, color = Neon.accent3, fontSize = 9.sp,
+                fontWeight = FontWeight.Black, letterSpacing = 1.1.sp)
+        }
         content()
     }
 }
 
-@Composable private fun Sw(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
+@Composable private fun TierSw(label: String, tier: T, value: Boolean,
+                               onChange: (Boolean) -> Unit) {
     var v by remember { mutableStateOf(value) }
-    val toggle: () -> Unit = {
-        v = !v; try { onChange(v) } catch (_: Throwable) {}
-    }
-    val noRipple = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val toggle = { v = !v; try { onChange(v) } catch (_: Throwable) {} }
+    val noRipple = remember { MutableInteractionSource() }
     Row(verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp)
+        modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp)
             .clickable(interactionSource = noRipple, indication = null) { toggle() }
-            .padding(vertical = 2.dp)) {
-        // area de hit maior em volta do checkbox (18dp em vez de 14dp)
-        Box(Modifier.size(18.dp).clip(RoundedCornerShape(3.dp))
+            .padding(vertical = 1.dp)) {
+        Box(Modifier.size(16.dp).clip(RoundedCornerShape(3.dp))
             .background(if (v) Neon.accent else Color.Transparent)
             .border(1.dp, if (v) Neon.accent3 else Neon.dim, RoundedCornerShape(3.dp)),
             contentAlignment = Alignment.Center
         ) {
-            if (v) Text("✓", color = Color.White, fontSize = 12.sp,
+            if (v) Text("✓", color = Color.White, fontSize = 11.sp,
                 fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.width(8.dp))
-        Text(label, color = Neon.text, fontSize = 11.sp,
+        Spacer(Modifier.width(6.dp))
+        Text(label, color = Neon.text, fontSize = 10.sp,
             modifier = Modifier.weight(1f))
+        Text(tier.dot, color = tier.color.copy(alpha = 0.7f), fontSize = 10.sp,
+            fontWeight = FontWeight.Black)
     }
 }
 
@@ -419,9 +532,9 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 }
 
 @Composable private fun GhostBtn(label: String, onClick: () -> Unit) {
-    val noRipple = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val noRipple = remember { MutableInteractionSource() }
     Box(
-        Modifier.fillMaxWidth().heightIn(min = 32.dp)
+        Modifier.fillMaxWidth().heightIn(min = 30.dp)
             .clip(RoundedCornerShape(5.dp))
             .border(1.dp, Neon.accent3, RoundedCornerShape(5.dp))
             .clickable(interactionSource = noRipple, indication = null) {
