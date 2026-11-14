@@ -39,6 +39,10 @@ object WeaponPresets {
                      burstLen = 4, burstMult = 1.3f,
                      notes = "parecido com M4 mas mais vertical"),
 
+        WeaponPreset("M7",           "M7",   pullY = 8.5f,  pullX = 0.4f,  intervalMs = 30,
+                     burstLen = 4, burstMult = 1.3f,
+                     notes = "AR nivel SCAR, mira sobe sozinha ate scopando"),
+
         WeaponPreset("MP5",          "MP5",  pullY = 4.5f,  pullX = -0.2f, intervalMs = 24,
                      burstLen = 3, burstMult = 1.3f,
                      notes = "fogo rapido, recuo baixo"),
@@ -50,6 +54,10 @@ object WeaponPresets {
         WeaponPreset("UMP",          "UMP",  pullY = 4.0f,  pullX = 0.0f,  intervalMs = 28,
                      burstLen = 3, burstMult = 1.2f,
                      notes = "SMG estavel"),
+
+        WeaponPreset("Skorp",        "SKP",  pullY = 7.0f,  pullX = 0.2f,  intervalMs = 24,
+                     burstLen = 2, burstMult = 1.2f,
+                     notes = "metralhadora, subida continua e rapida"),
 
         WeaponPreset("Groza",        "GRZ",  pullY = 8.5f,  pullX = -0.6f, intervalMs = 30,
                      burstLen = 5, burstMult = 1.5f,
