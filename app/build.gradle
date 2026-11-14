@@ -35,10 +35,10 @@ android {
 
 dependencies {
     // VA desligado nesta build — stubs locais em com.lody.virtual.*
-    // (artefato do asLody nao esta publicado no jitpack; buildar do source
-    //  se quiser container real)
     // Xposed API: stubs locais em de.robv.android.xposed.*
-    // (classes reais sao fornecidas pelo VirtualXposed em runtime)
+
+    // ML Kit — pose detection (modelo via Play Services, 0 MB no APK)
+    implementation 'com.google.mlkit:pose-detection:18.0.0-beta5'
 
     implementation "androidx.core:core-ktx:1.13.1"
     implementation "androidx.appcompat:appcompat:1.7.0"

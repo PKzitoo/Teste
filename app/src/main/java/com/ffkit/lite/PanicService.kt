@@ -12,6 +12,11 @@ class PanicService : AccessibilityService() {
     private val downHits = ArrayDeque<Long>()
     private val upHits   = ArrayDeque<Long>()
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        GestureEngine.service.set(this)
+    }
+
     override fun onKeyEvent(e: KeyEvent): Boolean {
         if (e.action != KeyEvent.ACTION_DOWN) return false
         val now = System.currentTimeMillis()

@@ -27,6 +27,13 @@ import androidx.compose.ui.unit.dp
 class MainActivity : ComponentActivity() {
     private val pin = "1337"
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CvBridge.REQ_PROJECTION) {
+            CvBridge.onProjectionResult(applicationContext, resultCode, data)
+        }
+    }
+
     override fun onCreate(s: Bundle?) {
         super.onCreate(s)
         setContent {

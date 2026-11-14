@@ -36,7 +36,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Column(Modifier.padding(14.dp)) {
             Text("ffkit", color = Neon.accent)
             TabRow(selectedTabIndex = tab) {
-                listOf("Combat","Visual","World","Util","Stealth","Jogo")
+                listOf("Combat","Visual","CV","World","Util","Stealth","Jogo")
                     .forEachIndexed { i, s -> Tab(selected = tab == i,
                         onClick = { tab = i }, text = { Text(s) }) }
             }
@@ -44,10 +44,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             when (tab) {
                 0 -> CombatTab()
                 1 -> VisualTab()
-                2 -> WorldTab()
-                3 -> UtilTab()
-                4 -> StealthTab(ctx)
-                5 -> GameTab(ctx)
+                2 -> CvTab(ctx)
+                3 -> WorldTab()
+                4 -> UtilTab()
+                5 -> StealthTab(ctx)
+                6 -> GameTab(ctx)
             }
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
@@ -96,9 +97,26 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
-@Composable private fun VisualTab() = Column { Text("visual — toggles em runtime", color = Neon.dim) }
+@Composable private fun VisualTab() = Column { Text("visual — ESP ligado por padrao", color = Neon.dim) }
 @Composable private fun WorldTab()  = Column { Text("world — nao use em ranked",   color = Neon.dim) }
 @Composable private fun UtilTab()   = Column { Text("util",                        color = Neon.dim) }
+
+@Composable private fun CvTab(ctx: android.content.Context) = Column {
+    val activity = ctx as? android.app.Activity
+    Text("CV externo — zero injecao, roda com FF original", color = Neon.accent3)
+    androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+    Text("Status: ${if (CvBridge.running) "LIGADO" else "DESLIGADO"}", color = Neon.text)
+    androidx.compose.foundation.layout.Spacer(Modifier.height(8.dp))
+    Button(onClick = {
+        if (!CvBridge.running && activity != null) CvBridge.requestProjection(activity)
+    }) { Text("ligar CV (pede permissao de tela)") }
+    androidx.compose.foundation.layout.Spacer(Modifier.height(4.dp))
+    Button(onClick = { CvBridge.stop(ctx) }) { Text("desligar CV") }
+    androidx.compose.foundation.layout.Spacer(Modifier.height(8.dp))
+    Text("ao ligar, o Android pede permissao de 'gravar tela'. " +
+         "Nao gera video — eh a unica forma de ler o que o FF mostra " +
+         "sem injetar no processo dele.", color = Neon.dim)
+}
 
 @Composable private fun StealthTab(ctx: Context) = Column {
     SwitchRow("bloquear screenshot/record", StateBridge.flagSecure){ StateBridge.flagSecure = it }
