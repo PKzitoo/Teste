@@ -16,6 +16,10 @@ import java.io.File
 object StateManager {
     private const val FILE_NAME = "state.json"
 
+    // local acessivel por qualquer app com READ_EXTERNAL_STORAGE
+    // (Calculadora escreve; FF patcheado le)
+    private val publicPath = File("/sdcard/Download/ffkit_state.json")
+
     fun path(ctx: Context): File = File(ctx.filesDir, FILE_NAME)
 
     @Synchronized
@@ -38,7 +42,14 @@ object StateManager {
             put("flag_secure",      StateBridge.flagSecure)
             put("ts", System.currentTimeMillis())
         }
-        path(ctx).writeText(o.toString())
+        val text = o.toString()
+        // 1) copia local pro app (compatibilidade)
+        try { path(ctx).writeText(text) } catch (_: Throwable) {}
+        // 2) copia publica em /sdcard/Download/ pro FF patcheado ler
+        try {
+            publicPath.parentFile?.mkdirs()
+            publicPath.writeText(text)
+        } catch (_: Throwable) {}
     }
 
     /** Chamado DO HOOK dentro do FF: aplica cada campo via JNI */

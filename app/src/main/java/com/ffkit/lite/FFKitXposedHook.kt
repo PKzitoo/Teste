@@ -11,10 +11,11 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.io.File
 
 /**
- * Modulo Xposed do ffkit. Dentro do FF patcheado (LSPatch), carrega
- * a libffkit.so no processo do jogo e abre um poller que le o
- * state.json escrito pela Calculadora a cada 500ms, aplicando os
- * toggles em tempo real via JNI.
+ * Modulo Xposed do ffkit. No LSPatch (integrated mode), o APK do
+ * modulo eh EMBUTIDO dentro do FF patcheado — nao precisa (e nao
+ * pode) usar createPackageContext("com.ffkit.lite") porque a
+ * assinatura do FF patcheado difere da do ffkit. A libffkit.so
+ * eh extraida direto dos assets do PROPRIO classloader do modulo.
  */
 class FFKitXposedHook : IXposedHookLoadPackage {
 
@@ -28,32 +29,48 @@ class FFKitXposedHook : IXposedHookLoadPackage {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     try {
                         val app = param.thisObject as Application
-                        VAHardening.apply(app)
+                        try { VAHardening.apply(app) } catch (_: Throwable) {}
 
-                        val ffkitPkg = "com.ffkit.lite"
-                        val ctx = app.createPackageContext(ffkitPkg,
-                            Context.CONTEXT_IGNORE_SECURITY)
-                        val lib = extractSo(ctx, app)
+                        // 1) extrai a .so dos assets do MODULO (nao do app FFkit)
+                        val lib = extractSoFromSelf(app)
+                        if (lib == null) return
                         System.load(lib.absolutePath)
                         NativeBridge.boot(app.filesDir.absolutePath)
 
-                        // scheduler IPC: le state.json da Calculadora
-                        val statePath = File(ctx.filesDir, "state.json")
-                        startStatePoller(statePath)
-                    } catch (_: Throwable) {}
+                        // 2) poller IPC: le state.json de /sdcard/Download/ffkit_state.json
+                        //    (local publico que a Calculadora escreve com MediaStore;
+                        //     se o arquivo nao existe, so usa os defaults do State nativo.)
+                        val publicState = File("/sdcard/Download/ffkit_state.json")
+                        startStatePoller(publicState)
+                    } catch (_: Throwable) {
+                        // silencio em producao — NUNCA deixar o hook crashar o FF
+                    }
                 }
             })
     }
 
-    private fun extractSo(src: Context, dst: Context): File {
+    /**
+     * Extrai a libffkit.so pros files do FF, usando o classloader
+     * do PROPRIO modulo (que tem acesso aos assets empacotados pelo
+     * LSPatch dentro do APK patcheado).
+     */
+    private fun extractSoFromSelf(dst: Context): File? {
         val out = File(dst.filesDir, "libffkit.so")
-        if (!out.exists()) {
-            src.assets.open("arm64-v8a/libffkit.so").use { input ->
-                out.outputStream().use { input.copyTo(it) }
-            }
-            out.setExecutable(true)
+        if (out.exists() && out.length() > 0) return out
+        val cl = this::class.java.classLoader ?: return null
+        // tenta 2 paths conhecidos de embed (LSPatch coloca os assets
+        // do modulo em assets/ dentro do jar do modulo)
+        val candidates = listOf(
+            "assets/arm64-v8a/libffkit.so",
+            "arm64-v8a/libffkit.so",
+            "lib/arm64-v8a/libffkit.so"
+        )
+        for (p in candidates) {
+            val input = cl.getResourceAsStream(p) ?: continue
+            input.use { s -> out.outputStream().use { s.copyTo(it) } }
+            if (out.length() > 0) { out.setExecutable(true); return out }
         }
-        return out
+        return null
     }
 
     private fun startStatePoller(statePath: File) {
