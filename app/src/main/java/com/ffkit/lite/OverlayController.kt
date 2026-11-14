@@ -42,14 +42,20 @@ object OverlayController {
         }
     }
 
-    private val lifecycleOwner = object : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
-        private val reg = LifecycleRegistry(this).apply { currentState = Lifecycle.State.RESUMED }
-        private val vms = ViewModelStore()
-        private val ssr = SavedStateRegistryController.create(this).also { it.performRestore(null) }
-        override val lifecycle: Lifecycle get() = reg
-        override val viewModelStore: ViewModelStore get() = vms
-        override val savedStateRegistry: SavedStateRegistry get() = ssr.savedStateRegistry
+    private class OverlayOwners : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
+        private val _lifecycle = LifecycleRegistry.createUnsafe(this)
+        private val _vms = ViewModelStore()
+        private val _ssr = SavedStateRegistryController.create(this)
+        init {
+            _ssr.performAttach()
+            _ssr.performRestore(null)
+            _lifecycle.currentState = Lifecycle.State.RESUMED
+        }
+        override val lifecycle: Lifecycle get() = _lifecycle
+        override val viewModelStore: ViewModelStore get() = _vms
+        override val savedStateRegistry: SavedStateRegistry get() = _ssr.savedStateRegistry
     }
+    private val lifecycleOwner by lazy { OverlayOwners() }
 
     fun show() {
         if (view != null) return
