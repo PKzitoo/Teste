@@ -12,7 +12,8 @@
     <application
         android:name=".HostApp"
         android:label="Calculadora"
-        android:icon="@android:drawable/ic_menu_edit"
+        android:icon="@drawable/ic_calc"
+        android:roundIcon="@drawable/ic_calc"
         android:theme="@style/Theme.FFKit">
 
         <meta-data android:name="xposedmodule"     android:value="true"/>
@@ -35,22 +36,32 @@
         <activity-alias android:name=".Calc"
             android:targetActivity=".MainActivity"
             android:enabled="true"  android:exported="true"
+            android:icon="@drawable/ic_calc"
+            android:roundIcon="@drawable/ic_calc"
             android:label="Calculadora"/>
         <activity-alias android:name=".Weather"
             android:targetActivity=".MainActivity"
             android:enabled="false" android:exported="true"
+            android:icon="@drawable/ic_weather"
+            android:roundIcon="@drawable/ic_weather"
             android:label="Clima"/>
         <activity-alias android:name=".Notes"
             android:targetActivity=".MainActivity"
             android:enabled="false" android:exported="true"
+            android:icon="@drawable/ic_notes"
+            android:roundIcon="@drawable/ic_notes"
             android:label="Bloco de Notas"/>
         <activity-alias android:name=".Flashlight"
             android:targetActivity=".MainActivity"
             android:enabled="false" android:exported="true"
+            android:icon="@drawable/ic_flash"
+            android:roundIcon="@drawable/ic_flash"
             android:label="Lanterna"/>
         <activity-alias android:name=".Launcher"
             android:targetActivity=".MainActivity"
             android:enabled="false" android:exported="true"
+            android:icon="@drawable/ic_files"
+            android:roundIcon="@drawable/ic_files"
             android:label="Arquivos"/>
 
         <service android:name=".PanicService"
