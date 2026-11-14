@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.sp
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
     Surface(
-        modifier = Modifier.width(230.dp),
+        modifier = Modifier.width(340.dp),   // landscape-ish: mais largo
         color = Neon.bg,
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, Neon.stroke),
@@ -158,12 +158,19 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ CONTENT ============
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
+    // IMPORTANTE: NAO usar heightIn(max) + verticalScroll juntos — isso
+    // reserva a altura maxima mesmo com conteudo menor (a scroll viewport
+    // precisa de area bounded). Usamos heightIn(max) sobre um Column que
+    // mede o conteudo real via wrapContentHeight, e aplica scroll SO quando
+    // ultrapassa o cap.
     Column(
-        Modifier.weight(1f).heightIn(max = 340.dp)
+        Modifier.weight(1f)
             .background(Neon.panel)
-            .padding(horizontal = 5.dp, vertical = 5.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .heightIn(max = 300.dp)
+            .wrapContentHeight(unbounded = false)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         when (tab) {
             0 -> AimTab()
@@ -502,11 +509,11 @@ private enum class T(val color: Color, val dot: String) {
                                onChange: (Boolean) -> Unit) {
     var v by remember { mutableStateOf(value) }
     val toggle = { v = !v; try { onChange(v) } catch (_: Throwable) {} }
-    val noRipple = remember { MutableInteractionSource() }
     Row(verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp)
-            .clickable(interactionSource = noRipple, indication = null) { toggle() }
-            .padding(vertical = 1.dp)) {
+        modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .clickable { toggle() }   // ripple default do Material3 vem com LocalIndication
+            .padding(horizontal = 2.dp, vertical = 2.dp)) {
         Box(Modifier.size(16.dp).clip(RoundedCornerShape(3.dp))
             .background(if (v) Neon.accent else Color.Transparent)
             .border(1.dp, if (v) Neon.accent3 else Neon.dim, RoundedCornerShape(3.dp)),
@@ -515,7 +522,7 @@ private enum class T(val color: Color, val dot: String) {
             if (v) Text("✓", color = Color.White, fontSize = 11.sp,
                 fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(7.dp))
         Text(label, color = Neon.text, fontSize = 10.sp,
             modifier = Modifier.weight(1f))
         Text(tier.dot, color = tier.color.copy(alpha = 0.7f), fontSize = 10.sp,
@@ -549,14 +556,11 @@ private enum class T(val color: Color, val dot: String) {
 }
 
 @Composable private fun GhostBtn(label: String, onClick: () -> Unit) {
-    val noRipple = remember { MutableInteractionSource() }
     Box(
         Modifier.fillMaxWidth().heightIn(min = 30.dp)
             .clip(RoundedCornerShape(5.dp))
             .border(1.dp, Neon.accent3, RoundedCornerShape(5.dp))
-            .clickable(interactionSource = noRipple, indication = null) {
-                try { onClick() } catch (_: Throwable) {}
-            },
+            .clickable { try { onClick() } catch (_: Throwable) {} },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = Neon.accent3, fontSize = 10.sp,
