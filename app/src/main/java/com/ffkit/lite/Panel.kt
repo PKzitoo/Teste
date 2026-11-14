@@ -1,8 +1,11 @@
 package com.ffkit.lite
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,9 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -44,7 +50,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             Spacer(Modifier.height(6.dp))
 
             // tabs horizontais compactas
-            Row(Modifier.fillMaxWidth().horizontalChips()) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
                 tabs.forEachIndexed { i, s ->
                     TabChip(s, tab == i) { tab = i }
                 }
@@ -182,9 +188,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         modifier = Modifier.fillMaxWidth().heightIn(min = 28.dp)) {
         Text(label, color = Neon.text, fontSize = 11.sp,
             modifier = Modifier.weight(1f))
-        Switch(checked = v, onCheckedChange = {
-            v = it; try { onChange(it) } catch (_: Throwable) {}
-        }, modifier = Modifier.scale(0.75f))
+        Switch(
+            checked = v,
+            onCheckedChange = { v = it; try { onChange(it) } catch (_: Throwable) {} },
+            modifier = Modifier.scale(0.75f)
+        )
     }
 }
 
@@ -213,38 +221,36 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     }
 }
 
-@Composable private fun StatusRow(label: String, value: String, color: androidx.compose.ui.graphics.Color) {
+@Composable private fun StatusRow(label: String, value: String, color: Color) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Neon.text, fontSize = 11.sp, modifier = Modifier.weight(1f))
         Text(value, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
-@Composable private fun Btn(label: String, color: androidx.compose.ui.graphics.Color,
+@Composable private fun Btn(label: String, color: Color,
                              modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        modifier = modifier.heightIn(min = 30.dp)
+    Box(
+        modifier = modifier
+            .heightIn(min = 30.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(color.copy(alpha = 0.18f))
             .border(1.dp, color, RoundedCornerShape(6.dp))
-            .clickableSafe(onClick),
-        color = androidx.compose.ui.graphics.Color.Transparent
+            .clickable { try { onClick() } catch (_: Throwable) {} }
+            .padding(vertical = 6.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Box(Modifier.fillMaxWidth().padding(vertical = 6.dp),
-            contentAlignment = Alignment.Center) {
-            Text(label, color = color, fontSize = 10.sp,
-                fontWeight = FontWeight.Bold)
-        }
+        Text(label, color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
 }
 
-@Composable private fun MiniBtn(label: String, color: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
+@Composable private fun MiniBtn(label: String, color: Color, onClick: () -> Unit) {
     Box(
         Modifier.size(22.dp)
             .clip(RoundedCornerShape(5.dp))
             .background(color.copy(alpha = 0.2f))
             .border(1.dp, color, RoundedCornerShape(5.dp))
-            .clickableSafe(onClick),
+            .clickable { try { onClick() } catch (_: Throwable) {} },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -256,9 +262,9 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Box(
         Modifier.padding(horizontal = 2.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(if (selected) color.copy(alpha = 0.25f) else androidx.compose.ui.graphics.Color.Transparent)
+            .background(if (selected) color.copy(alpha = 0.25f) else Color.Transparent)
             .border(1.dp, color, RoundedCornerShape(4.dp))
-            .clickableSafe(onClick)
+            .clickable { try { onClick() } catch (_: Throwable) {} }
             .padding(horizontal = 6.dp, vertical = 3.dp)
     ) {
         Text(label, color = color, fontSize = 9.sp, fontWeight = FontWeight.Bold)
@@ -269,10 +275,3 @@ private fun formatVal(v: Float): String {
     val r = v.toInt().toFloat()
     return if (v == r) r.toInt().toString() else String.format("%.1f", v)
 }
-
-private fun Modifier.clickableSafe(onClick: () -> Unit) =
-    this.then(androidx.compose.foundation.clickable { try { onClick() } catch (_: Throwable) {} })
-
-private fun Modifier.horizontalChips() = this.then(
-    androidx.compose.foundation.horizontalScroll(androidx.compose.foundation.rememberScrollState(null) as androidx.compose.foundation.ScrollState)
-)
