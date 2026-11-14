@@ -8,10 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -158,17 +156,12 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ CONTENT ============
 
 @Composable private fun RowScope.Content(ctx: Context, tab: Int) {
-    // IMPORTANTE: NAO usar heightIn(max) + verticalScroll juntos — isso
-    // reserva a altura maxima mesmo com conteudo menor (a scroll viewport
-    // precisa de area bounded). Usamos heightIn(max) sobre um Column que
-    // mede o conteudo real via wrapContentHeight, e aplica scroll SO quando
-    // ultrapassa o cap.
+    // ZERO scroll + zero heightIn = Column pega altura EXATA do conteudo.
+    // Panel wrap exato ao conteudo da aba (sem area preta sobrando).
+    // Se uma aba for maior que a tela, o scroll do SO rola o inteiro.
     Column(
         Modifier.weight(1f)
             .background(Neon.panel)
-            .heightIn(max = 300.dp)
-            .wrapContentHeight(unbounded = false)
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 6.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
