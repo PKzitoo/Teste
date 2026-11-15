@@ -301,13 +301,13 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         active = StateBridge.aimSilent, tier = T.R) {
         StateBridge.aimSilent = it
     }
-    SliderCard("Aim FOV", "px (saltos 50)", 30f..630f, 50f, StateBridge.aimFov) {
+    SliderCard("Aim FOV", "30-630", 30f..630f, 1f, StateBridge.aimFov) {
         StateBridge.aimFov = it
     }
     SliderCard("Suavidade", "1-10", 1f..10f, 1f, StateBridge.aimSmooth) {
         StateBridge.aimSmooth = it
     }
-    SliderCard("Reação ms", "ms (saltos 50)", 50f..500f, 50f, StateBridge.aimReactionMs.toFloat()) {
+    SliderCard("Reação ms", "50-500", 50f..500f, 1f, StateBridge.aimReactionMs.toFloat()) {
         StateBridge.aimReactionMs = it.toInt()
     }
     SliderCard("Tapas HS", "0-10", 0f..10f, 1f, StateBridge.shotHeadCount.toFloat()) {
@@ -350,12 +350,12 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             active = StateBridge.espName, tier = T.M) { StateBridge.espName = it }
         FCard("👁", "Hide scoping", "Oculta ESP ao scopar",
             active = StateBridge.espHideScope, tier = T.S) { StateBridge.espHideScope = it }
-        SliderCard("Max distance", "metros (saltos 20)", 20f..500f, 20f, StateBridge.espMaxDist) {
+        SliderCard("Max distance", "20-500m", 20f..500f, 1f, StateBridge.espMaxDist) {
             StateBridge.espMaxDist = it
         }
     }
     if (StateBridge.espMode == 3) {
-        SliderCard("Beep distance", "metros (saltos 10)", 10f..150f, 10f, StateBridge.espAudioThr) {
+        SliderCard("Beep distance", "10-150m", 10f..150f, 1f, StateBridge.espAudioThr) {
             StateBridge.espAudioThr = it
         }
     }
