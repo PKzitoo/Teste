@@ -35,21 +35,23 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun Panel(ctx: Context, onMinimize: () -> Unit) {
     var tab by remember { mutableStateOf(0) }
+    // OBSERVA refreshKey: quando Profile.apply() bumpar, tudo recompose
+    val refresh = Profile.refreshKey.intValue
     Surface(
-        modifier = Modifier.width(360.dp),
+        modifier = Modifier.width(300.dp),
         color = Neon.bg,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
     ) {
         Column {
             Header(onMinimize)
             TopTabs(tab) { tab = it }
             Row(
-                Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                LeftCard()
-                FeatureList(ctx, tab, Modifier.weight(2f))
+                LeftCard(refresh)
+                FeatureList(ctx, tab, refresh, Modifier.weight(2f))
             }
             Footer()
         }
@@ -163,84 +165,78 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 // ============ LEFT CARD (branding + perfil + status) ============
 
-@Composable private fun LeftCard() {
+@Composable private fun LeftCard(@Suppress("UNUSED_PARAMETER") refresh: Int) {
+    val current = Profile.current()
+    val intensity = Profile.intensity()
     Column(
-        Modifier.width(100.dp)
-            .clip(RoundedCornerShape(10.dp))
+        Modifier.width(84.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(Neon.card)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-            .padding(10.dp),
+            .border(1.dp, Neon.stroke.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+            .padding(7.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // "mascote" ffkit — anel roxo com texto central
         Box(
-            Modifier.size(64.dp).clip(CircleShape)
+            Modifier.size(52.dp).clip(CircleShape)
                 .background(Brush.radialGradient(
                     listOf(Neon.accent, Neon.accent2, Color.Black)))
-                .border(1.5.dp, Neon.accent3, CircleShape),
+                .border(1.dp, Neon.accent3, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text("FF", color = Color.White, fontSize = 20.sp,
-                fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            Text("FF", color = Color.White, fontSize = 16.sp,
+                fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
         }
-        Spacer(Modifier.height(8.dp))
-        Text("FFKIT", color = Color.White, fontSize = 11.sp,
-            fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-        Text("@pkxit", color = Neon.accent3, fontSize = 10.sp,
-            fontWeight = FontWeight.Black, letterSpacing = 0.8.sp)
-        Text("v20-wise", color = Neon.dim, fontSize = 7.sp)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(5.dp))
+        Text("FFKIT", color = Color.White, fontSize = 9.sp,
+            fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
+        Text("@pkxit", color = Neon.accent3, fontSize = 9.sp,
+            fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(6.dp))
 
-        // Status LED
         val aimOn = StateBridge.aimEnabled
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(7.dp).clip(CircleShape)
+            Box(Modifier.size(6.dp).clip(CircleShape)
                 .background(if (aimOn) Color(0xFF22C55E) else Neon.dim))
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(3.dp))
             Text(if (aimOn) "ACTIVE" else "IDLE",
                 color = if (aimOn) Color(0xFF22C55E) else Neon.dim,
-                fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                fontSize = 7.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(6.dp))
 
-        // Profile picker (LEGIT / AGGR / RAGE)
-        Text("PERFIL", color = Neon.accent3, fontSize = 7.sp,
+        Text("PERFIL", color = Neon.accent3, fontSize = 6.sp,
             fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-        Spacer(Modifier.height(4.dp))
-        ProfileBtn("LEGIT", 1, 3)
         Spacer(Modifier.height(3.dp))
-        ProfileBtn("AGGR",  3, 1)
-        Spacer(Modifier.height(3.dp))
-        ProfileBtn("RAGE",  5, 0)
-        Spacer(Modifier.height(8.dp))
+        ProfileBtn("LEGIT", current == Profile.P.LEGIT, Profile.P.LEGIT)
+        Spacer(Modifier.height(2.dp))
+        ProfileBtn("AGGR",  current == Profile.P.AGGR,  Profile.P.AGGR)
+        Spacer(Modifier.height(2.dp))
+        ProfileBtn("RAGE",  current == Profile.P.RAGE,  Profile.P.RAGE)
+        if (current == Profile.P.CUSTOM) {
+            Spacer(Modifier.height(2.dp))
+            Text("CUSTOM", color = Neon.dim, fontSize = 7.sp,
+                fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(6.dp))
 
-        // Taxa HS computada
-        val h = StateBridge.shotHeadCount
-        val b = StateBridge.shotBodyCount
-        val total = h + b
-        val hsRate = if (total > 0) (h * 100 / total) else 0
-        Text("HS %", color = Neon.dim, fontSize = 7.sp,
-            fontWeight = FontWeight.Bold)
-        Text("$hsRate%", color = when {
-            hsRate >= 80 -> Neon.danger
-            hsRate >= 50 -> Neon.accent3
-            else         -> Neon.dim
-        }, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("INTENSIDADE", color = Neon.dim, fontSize = 6.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+        Text("$intensity%", color = when {
+            intensity >= 70 -> Neon.danger
+            intensity >= 40 -> Color(0xFFFBBF24)
+            else            -> Color(0xFF22C55E)
+        }, fontSize = 17.sp, fontWeight = FontWeight.Black)
     }
 }
 
-@Composable private fun ProfileBtn(label: String, h: Int, b: Int) {
-    val sel = StateBridge.shotHeadCount == h && StateBridge.shotBodyCount == b
+@Composable private fun ProfileBtn(label: String, sel: Boolean, p: Profile.P) {
     Box(
         Modifier.fillMaxWidth().heightIn(min = 22.dp)
             .clip(RoundedCornerShape(4.dp))
             .background(if (sel) Neon.accent else Neon.cardHi)
             .border(1.dp, if (sel) Neon.accent3 else Neon.stroke.copy(alpha = 0.4f),
                 RoundedCornerShape(4.dp))
-            .clickable {
-                StateBridge.shotHeadCount = h
-                StateBridge.shotBodyCount = b
-            },
+            .clickable { Profile.apply(p) },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = Color.White, fontSize = 9.sp,
@@ -250,10 +246,12 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 // ============ FEATURE LIST ============
 
-@Composable private fun FeatureList(ctx: Context, tab: Int, modifier: Modifier) {
+@Composable private fun FeatureList(ctx: Context, tab: Int,
+                                     @Suppress("UNUSED_PARAMETER") refresh: Int,
+                                     modifier: Modifier) {
     Column(
         modifier,
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         when (tab) {
             0 -> AimFeatures()
@@ -295,11 +293,20 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         active = StateBridge.aimSilent, tier = T.R) {
         StateBridge.aimSilent = it
     }
-    SliderCard("Aim FOV", "30-600px", 30f..600f, StateBridge.aimFov) {
+    SliderCard("Aim FOV", "px (saltos 50)", 30f..630f, 50f, StateBridge.aimFov) {
         StateBridge.aimFov = it
     }
-    SliderCard("Suavidade", "1-10", 1f..10f, StateBridge.aimSmooth) {
+    SliderCard("Suavidade", "1-10", 1f..10f, 1f, StateBridge.aimSmooth) {
         StateBridge.aimSmooth = it
+    }
+    SliderCard("Reação ms", "ms (saltos 50)", 50f..500f, 50f, StateBridge.aimReactionMs.toFloat()) {
+        StateBridge.aimReactionMs = it.toInt()
+    }
+    SliderCard("Tapas HS", "0-10", 0f..10f, 1f, StateBridge.shotHeadCount.toFloat()) {
+        StateBridge.shotHeadCount = it.toInt()
+    }
+    SliderCard("Peitos", "0-10", 0f..10f, 1f, StateBridge.shotBodyCount.toFloat()) {
+        StateBridge.shotBodyCount = it.toInt()
     }
 }
 
@@ -335,12 +342,12 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             active = StateBridge.espName, tier = T.M) { StateBridge.espName = it }
         FCard("👁", "Hide scoping", "Oculta ESP ao scopar",
             active = StateBridge.espHideScope, tier = T.S) { StateBridge.espHideScope = it }
-        SliderCard("Max distance", "metros", 20f..500f, StateBridge.espMaxDist) {
+        SliderCard("Max distance", "metros (saltos 20)", 20f..500f, 20f, StateBridge.espMaxDist) {
             StateBridge.espMaxDist = it
         }
     }
     if (StateBridge.espMode == 3) {
-        SliderCard("Beep distance", "metros", 10f..150f, StateBridge.espAudioThr) {
+        SliderCard("Beep distance", "metros (saltos 10)", 10f..150f, 10f, StateBridge.espAudioThr) {
             StateBridge.espAudioThr = it
         }
     }
@@ -391,7 +398,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     FCard("💨", "Speed Hack", "Velocidade turbo",
         active = StateBridge.speedHack, tier = T.M) { StateBridge.speedHack = it }
     if (StateBridge.speedHack) {
-        SliderCard("Mult", "1-3x", 1f..3f, StateBridge.speedMult) {
+        SliderCard("Mult", "1-3x", 1f..3f, 1f, StateBridge.speedMult) {
             StateBridge.speedMult = it
         }
     }
@@ -442,7 +449,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         StateBridge.flagSecure = it
         OverlayController.refreshFlags()
     }
-    SliderCard("Auto-off kills", "0=desligado", 0f..20f,
+    SliderCard("Auto-off kills", "0=desligado", 0f..20f, 1f,
         StateBridge.autoOffKills.toFloat()) {
         StateBridge.autoOffKills = it.toInt()
     }
@@ -495,78 +502,90 @@ private enum class T(val color: Color) {
     R(Color(0xFFEF4444))   // vermelho rage
 }
 
-/** Feature card ao estilo JZN: icone, titulo+subtitulo, estado on/off */
+/** Feature card ao estilo JZN: icone, titulo+subtitulo, estado on/off.
+ *  remember(active) faz a state interna REINICIAR quando o `active` passado
+ *  mudar — assim Profile.apply() reflete nos switches imediatamente. */
 @Composable private fun FCard(icon: String, title: String, subtitle: String,
                               active: Boolean, tier: T,
                               onToggle: (Boolean) -> Unit) {
-    var v by remember { mutableStateOf(active) }
-    val toggle = { v = !v; try { onToggle(v) } catch (_: Throwable) {} }
+    var v by remember(active) { mutableStateOf(active) }
+    val toggle = {
+        v = !v
+        try { onToggle(v) } catch (_: Throwable) {}
+        Profile.bump()  // outras partes do painel (intensidade, perfil) atualizam
+    }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 44.dp)
-            .clip(RoundedCornerShape(8.dp))
+        Modifier.fillMaxWidth().heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(7.dp))
             .background(if (v) Neon.cardHi else Neon.card)
             .border(1.dp,
                 if (v) Neon.accent.copy(alpha = 0.6f) else Neon.stroke.copy(alpha = 0.3f),
-                RoundedCornerShape(8.dp))
+                RoundedCornerShape(7.dp))
             .clickable { toggle() }
-            .padding(horizontal = 9.dp, vertical = 6.dp),
+            .padding(horizontal = 7.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // icon circle
         Box(
-            Modifier.size(32.dp).clip(RoundedCornerShape(7.dp))
+            Modifier.size(28.dp).clip(RoundedCornerShape(6.dp))
                 .background(if (v) Neon.accent else Color.Black.copy(alpha = 0.4f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(icon, fontSize = 15.sp)
+            Text(icon, fontSize = 13.sp)
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(7.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 11.sp,
+            Text(title, color = Color.White, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold)
-            Text(subtitle, color = Neon.dim, fontSize = 8.5.sp)
+            Text(subtitle, color = Neon.dim, fontSize = 8.sp)
         }
-        // tier dot + state indicator
-        Box(Modifier.size(7.dp).clip(CircleShape).background(tier.color))
-        Spacer(Modifier.width(6.dp))
-        // bolinha on/off
+        Box(Modifier.size(6.dp).clip(CircleShape).background(tier.color))
+        Spacer(Modifier.width(5.dp))
         Box(
-            Modifier.width(28.dp).height(14.dp).clip(RoundedCornerShape(7.dp))
+            Modifier.width(24.dp).height(12.dp).clip(RoundedCornerShape(6.dp))
                 .background(if (v) Neon.accent else Neon.dim.copy(alpha = 0.4f))
                 .padding(1.dp),
             contentAlignment = if (v) Alignment.CenterEnd else Alignment.CenterStart
         ) {
-            Box(Modifier.size(12.dp).clip(CircleShape).background(Color.White))
+            Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White))
         }
     }
 }
 
+/**
+ * SliderCard com STEP. step=50 significa saltos de 50 em 50.
+ * O Slider do Material3 precisa de `steps = n_intervalos_internos`,
+ * calculado a partir do tamanho do range dividido pelo step.
+ */
 @Composable private fun SliderCard(title: String, subtitle: String,
                                    range: ClosedFloatingPointRange<Float>,
+                                   step: Float,
                                    value: Float, onChange: (Float) -> Unit) {
-    var v by remember { mutableStateOf(value) }
+    var v by remember(value) { mutableStateOf(value) }
+    val stepsCount = (((range.endInclusive - range.start) / step).toInt() - 1).coerceAtLeast(0)
     Column(
         Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(7.dp))
             .background(Neon.card)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 9.dp, vertical = 6.dp)
+            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(7.dp))
+            .padding(horizontal = 7.dp, vertical = 5.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontSize = 11.sp,
+                Text(title, color = Color.White, fontSize = 10.sp,
                     fontWeight = FontWeight.Bold)
-                Text(subtitle, color = Neon.dim, fontSize = 8.5.sp)
+                Text(subtitle, color = Neon.dim, fontSize = 8.sp)
             }
-            Text(formatVal(v), color = Neon.accent3, fontSize = 12.sp,
+            Text(v.toInt().toString(), color = Neon.accent3, fontSize = 12.sp,
                 fontWeight = FontWeight.Black)
         }
         Slider(
             value = v, onValueChange = {
                 v = it; try { onChange(it) } catch (_: Throwable) {}
+                Profile.bump()
             },
             valueRange = range,
-            modifier = Modifier.height(22.dp),
+            steps = stepsCount,
+            modifier = Modifier.height(20.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Neon.accent3,
                 activeTrackColor = Neon.accent,

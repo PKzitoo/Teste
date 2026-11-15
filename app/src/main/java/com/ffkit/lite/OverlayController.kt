@@ -9,15 +9,19 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -174,14 +178,15 @@ object OverlayController {
      * no centro. Click instantaneo (sem ripple animation) = abre painel.
      * Drag em qualquer parte dela (via dragHandle MATCH_PARENT) = move.
      */
+    /** Bolinha minimizada = logo PKXIT inteira dentro do circulo.
+     *  Sem fundo preto em volta (CircleShape clipa o retangulo pra circulo). */
     @Composable
     private fun Bubble() {
         val interaction = remember { MutableInteractionSource() }
         Box(
             Modifier
-                .size(48.dp)
+                .size(52.dp)
                 .clip(CircleShape)
-                .background(Neon.accent)
                 .border(1.5.dp, Neon.accent3, CircleShape)
                 .pointerInput(Unit) {
                     detectDragGestures { change, drag ->
@@ -192,11 +197,14 @@ object OverlayController {
                 .clickable(
                     interactionSource = interaction,
                     indication = null
-                ) { openPanel() },
-            contentAlignment = Alignment.Center
+                ) { openPanel() }
         ) {
-            Text("ff", color = Color.White, fontSize = 15.sp,
-                fontWeight = FontWeight.Black)
+            Image(
+                painter = painterResource(id = R.drawable.ic_pkxit),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
