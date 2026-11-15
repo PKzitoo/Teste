@@ -82,7 +82,17 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             Text("FFKIT", color = Color.White, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Spacer(Modifier.width(6.dp))
-            Text("v20", color = Color.White.copy(alpha = 0.65f), fontSize = 9.sp)
+            // tag do dono em roxo claro — bem destacado
+            Box(
+                Modifier.clip(RoundedCornerShape(3.dp))
+                    .background(Color.Black.copy(alpha = 0.25f))
+                    .padding(horizontal = 5.dp, vertical = 2.dp)
+            ) {
+                Text("@pkxit", color = Neon.accent3, fontSize = 10.sp,
+                    fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
+            }
+            Spacer(Modifier.width(5.dp))
+            Text("v20", color = Color.White.copy(alpha = 0.55f), fontSize = 8.sp)
             Spacer(Modifier.weight(1f))
             Text("⋮⋮", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp,
                 fontWeight = FontWeight.Bold)
@@ -176,7 +186,9 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         Text("FFKIT", color = Color.White, fontSize = 11.sp,
             fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-        Text("v20-maxpack", color = Neon.dim, fontSize = 7.sp)
+        Text("@pkxit", color = Neon.accent3, fontSize = 10.sp,
+            fontWeight = FontWeight.Black, letterSpacing = 0.8.sp)
+        Text("v20-wise", color = Neon.dim, fontSize = 7.sp)
         Spacer(Modifier.height(10.dp))
 
         // Status LED
