@@ -38,7 +38,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     // OBSERVA refreshKey: quando Profile.apply() bumpar, tudo recompose
     val refresh = Profile.refreshKey.intValue
     Surface(
-        modifier = Modifier.width(380.dp),   // mais largo, pros sliders respirarem
+        modifier = Modifier.width(440.dp),   // bem mais largo pros lados
         color = Neon.bg,
         shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
@@ -551,17 +551,20 @@ private enum class T(val color: Color) {
     }
 }
 
-/** SliderCard: title + valor em linha, slider full width embaixo (altura usavel).
- *  44dp total, thumb grande, facil de arrastar. */
+/** SliderCard: FLUIDO (sem snap interno), mas valor exibido/armazenado
+ *  arredondado pro step. Visualmente desliza suave, logicamente respeita steps. */
 @Composable private fun SliderCard(title: String,
                                    @Suppress("UNUSED_PARAMETER") subtitle: String,
                                    range: ClosedFloatingPointRange<Float>,
                                    step: Float,
                                    value: Float, onChange: (Float) -> Unit) {
-    var v by remember(value) { mutableStateOf(value) }
-    val stepsCount = (((range.endInclusive - range.start) / step).toInt() - 1).coerceAtLeast(0)
+    // raw = valor cru enquanto arrasta (permite movimento suave)
+    // v   = valor snap-pro-step pra onChange + display
+    var raw by remember(value) { mutableStateOf(value) }
+    val v = (Math.round(raw / step) * step).toFloat().coerceIn(
+        range.start, range.endInclusive)
     Column(
-        Modifier.fillMaxWidth().heightIn(min = 44.dp)
+        Modifier.fillMaxWidth().heightIn(min = 46.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Neon.card)
             .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
@@ -575,13 +578,17 @@ private enum class T(val color: Color) {
                 fontWeight = FontWeight.Black)
         }
         Slider(
-            value = v, onValueChange = {
-                v = it; try { onChange(it) } catch (_: Throwable) {}
+            value = raw,
+            onValueChange = { newRaw ->
+                raw = newRaw
+                val snapped = (Math.round(newRaw / step) * step).toFloat()
+                    .coerceIn(range.start, range.endInclusive)
+                try { onChange(snapped) } catch (_: Throwable) {}
                 Profile.bump()
             },
             valueRange = range,
-            steps = stepsCount,
-            modifier = Modifier.fillMaxWidth().height(24.dp),
+            // SEM steps interno -> arrasto 100% fluido
+            modifier = Modifier.fillMaxWidth().height(26.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Neon.accent3,
                 activeTrackColor = Neon.accent,
