@@ -333,41 +333,43 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Text(sub, color = Neon.accent3, fontSize = 9.sp,
         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
 
-    if (StateBridge.espMode in listOf(1, 2)) {
-        FCard("📦", "Box 2D", "Caixa ao redor do inimigo",
-            active = StateBridge.espBox, tier = if (StateBridge.espMode == 2) T.R else T.M) {
-            StateBridge.espBox = it
-        }
-        FCard("💀", "Esqueleto", "Linhas dos ossos",
-            active = StateBridge.espSkeleton, tier = T.R) { StateBridge.espSkeleton = it }
-        FCard("❤", "HP Bar", "Barra de vida",
-            active = StateBridge.espHealth, tier = T.M) { StateBridge.espHealth = it }
-        FCard("📏", "Distance", "Metros ate o inimigo",
-            active = StateBridge.espDistance, tier = T.M) { StateBridge.espDistance = it }
-        FCard("👤", "Nome", "Nick do jogador",
-            active = StateBridge.espName, tier = T.M) { StateBridge.espName = it }
-        FCard("👁", "Hide scoping", "Oculta ESP ao scopar",
-            active = StateBridge.espHideScope, tier = T.S) { StateBridge.espHideScope = it }
-        SliderCard("Max distance", "20-500m", 20f..500f, 1f, StateBridge.espMaxDist) {
-            StateBridge.espMaxDist = it
-        }
+    // Opcoes SEMPRE visiveis — nao dependem de selecionar um modo antes
+    FCard("📦", "Box 2D", "",
+        active = StateBridge.espBox, tier = T.M) { StateBridge.espBox = it }
+    FCard("💀", "Esqueleto", "",
+        active = StateBridge.espSkeleton, tier = T.R) { StateBridge.espSkeleton = it }
+    FCard("❤", "HP Bar", "",
+        active = StateBridge.espHealth, tier = T.M) { StateBridge.espHealth = it }
+    FCard("📏", "Distance", "",
+        active = StateBridge.espDistance, tier = T.M) { StateBridge.espDistance = it }
+    FCard("👤", "Nome", "",
+        active = StateBridge.espName, tier = T.M) { StateBridge.espName = it }
+    FCard("👁", "Hide scoping", "",
+        active = StateBridge.espHideScope, tier = T.S) { StateBridge.espHideScope = it }
+    SliderCard("Max distance", "20-500m", 20f..500f, 1f, StateBridge.espMaxDist) {
+        StateBridge.espMaxDist = it
     }
-    if (StateBridge.espMode == 3) {
-        SliderCard("Beep distance", "10-150m", 10f..150f, 1f, StateBridge.espAudioThr) {
-            StateBridge.espAudioThr = it
-        }
+    SliderCard("Beep audio", "10-150m", 10f..150f, 1f, StateBridge.espAudioThr) {
+        StateBridge.espAudioThr = it
     }
 }
 
 @Composable private fun EspModeChip(label: String, idx: Int, mod: Modifier) {
+    // leitura direta do refreshKey pra garantir que o chip recompose quando
+    // Profile.bump() (ou outro clique) atualiza o estado
+    @Suppress("UNUSED_VARIABLE")
+    val rk = Profile.refreshKey.intValue
     val sel = StateBridge.espMode == idx
     Box(
-        mod.heightIn(min = 30.dp)
+        mod.heightIn(min = 26.dp)
             .clip(RoundedCornerShape(5.dp))
             .background(if (sel) Neon.accent else Neon.card)
             .border(1.dp, if (sel) Neon.accent3 else Neon.stroke.copy(alpha = 0.4f),
                 RoundedCornerShape(5.dp))
-            .clickable { StateBridge.espMode = idx },
+            .clickable {
+                StateBridge.espMode = idx
+                Profile.bump()   // <-- faltava! sem bump o chip nao atualiza
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = Color.White, fontSize = 10.sp,
