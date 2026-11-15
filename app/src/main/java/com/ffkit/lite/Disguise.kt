@@ -5,13 +5,14 @@ import android.content.pm.PackageManager
 
 object Disguise {
     private val skins = listOf(
+        "com.ffkit.lite.Wise",        // default
         "com.ffkit.lite.Calc",
         "com.ffkit.lite.Weather",
         "com.ffkit.lite.Notes",
         "com.ffkit.lite.Flashlight",
         "com.ffkit.lite.Launcher"
     )
-    private var idx = 0
+    private var idx = 1   // comeca em Wise (indice 0), cycle avanca pra Calc (indice 1)
     fun cycle(ctx: Context) {
         val pm = ctx.packageManager
         skins.forEachIndexed { i, alias ->

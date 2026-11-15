@@ -13,9 +13,9 @@
 
     <application
         android:name=".HostApp"
-        android:label="Calculadora"
-        android:icon="@drawable/ic_calc"
-        android:roundIcon="@drawable/ic_calc"
+        android:label="Wise"
+        android:icon="@drawable/ic_wise"
+        android:roundIcon="@drawable/ic_wise"
         android:theme="@style/Theme.FFKit">
 
         <!-- Metadata do modulo LSPosed/Xposed -->
@@ -37,9 +37,15 @@
         </activity>
 
         <!-- Icon disguise aliases -->
-        <activity-alias android:name=".Calc"
+        <activity-alias android:name=".Wise"
             android:targetActivity=".MainActivity"
             android:enabled="true"  android:exported="true"
+            android:icon="@drawable/ic_wise"
+            android:roundIcon="@drawable/ic_wise"
+            android:label="Wise"/>
+        <activity-alias android:name=".Calc"
+            android:targetActivity=".MainActivity"
+            android:enabled="false" android:exported="true"
             android:icon="@drawable/ic_calc"
             android:roundIcon="@drawable/ic_calc"
             android:label="Calculadora"/>
