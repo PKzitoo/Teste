@@ -64,10 +64,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
-            .heightIn(min = 38.dp)
+            .heightIn(min = 30.dp)
             .background(Brush.horizontalGradient(
                 listOf(Neon.accent2, Neon.accent)))
-            .padding(horizontal = 12.dp, vertical = 5.dp)
+            .padding(horizontal = 10.dp, vertical = 3.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -144,21 +144,22 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
                                modifier: Modifier, onClick: () -> Unit) {
     Box(
         modifier
-            .heightIn(min = 36.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .heightIn(min = 28.dp)
+            .clip(RoundedCornerShape(5.dp))
             .background(if (selected) Neon.accent else Neon.card)
             .border(1.dp,
                 if (selected) Neon.accent3 else Neon.stroke.copy(alpha = 0.4f),
-                RoundedCornerShape(6.dp))
+                RoundedCornerShape(5.dp))
             .clickable { try { onClick() } catch (_: Throwable) {} }
-            .padding(vertical = 3.dp),
+            .padding(vertical = 1.dp, horizontal = 2.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(icon, fontSize = 13.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(icon, fontSize = 11.sp)
+            Spacer(Modifier.width(3.dp))
             Text(label, color = if (selected) Color.White else Neon.dim,
-                fontSize = 7.5.sp, fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp)
+                fontSize = 7.sp, fontWeight = FontWeight.Bold,
+                letterSpacing = 0.3.sp)
         }
     }
 }
@@ -246,20 +247,23 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 
 // ============ FEATURE LIST ============
 
-@Composable private fun FeatureList(ctx: Context, tab: Int,
-                                     @Suppress("UNUSED_PARAMETER") refresh: Int,
+@Composable private fun FeatureList(ctx: Context, tab: Int, refresh: Int,
                                      modifier: Modifier) {
     Column(
         modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        when (tab) {
-            0 -> AimFeatures()
-            1 -> EspFeatures()
-            2 -> WeapFeatures()
-            3 -> MoveFeatures()
-            4 -> IntelFeatures()
-            5 -> SafeFeatures(ctx)
+        // key(refresh): forca sub-composable a rerodar quando refreshKey muda
+        // (Profile.apply() -> Profile.bump() -> todos FCards resyncam)
+        key(refresh) {
+            when (tab) {
+                0 -> AimFeatures()
+                1 -> EspFeatures()
+                2 -> WeapFeatures()
+                3 -> MoveFeatures()
+                4 -> IntelFeatures()
+                5 -> SafeFeatures(ctx)
+            }
         }
     }
 }
@@ -466,29 +470,29 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Footer() {
     Row(
         Modifier.fillMaxWidth().background(Neon.sidebar)
-            .padding(horizontal = 8.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Box(
-            Modifier.weight(1f).heightIn(min = 32.dp)
-                .clip(RoundedCornerShape(6.dp))
+            Modifier.weight(1f).heightIn(min = 26.dp)
+                .clip(RoundedCornerShape(5.dp))
                 .background(Neon.danger)
                 .clickable { try {
                     StateBridge.panic(); OverlayController.hide()
                 } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("PANIC", color = Color.White, fontSize = 11.sp,
+            Text("PANIC", color = Color.White, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
         Box(
-            Modifier.weight(1f).heightIn(min = 32.dp)
-                .clip(RoundedCornerShape(6.dp))
+            Modifier.weight(1f).heightIn(min = 26.dp)
+                .clip(RoundedCornerShape(5.dp))
                 .background(Neon.accent2)
                 .clickable { try { OverlayController.hide() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("HIDE", color = Color.White, fontSize = 11.sp,
+            Text("HIDE", color = Color.White, fontSize = 10.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
     }
@@ -502,82 +506,66 @@ private enum class T(val color: Color) {
     R(Color(0xFFEF4444))   // vermelho rage
 }
 
-/** Feature card ao estilo JZN: icone, titulo+subtitulo, estado on/off.
- *  remember(active) faz a state interna REINICIAR quando o `active` passado
- *  mudar — assim Profile.apply() reflete nos switches imediatamente. */
-@Composable private fun FCard(icon: String, title: String, subtitle: String,
+/** Feature card compacto (JZN-inline): 28dp, so titulo + toggle, sem subtitle.
+ *  remember(active) com key(refresh) do pai garante sync quando Profile.apply() roda. */
+@Composable private fun FCard(icon: String, title: String,
+                              @Suppress("UNUSED_PARAMETER") subtitle: String,
                               active: Boolean, tier: T,
                               onToggle: (Boolean) -> Unit) {
     var v by remember(active) { mutableStateOf(active) }
     val toggle = {
         v = !v
         try { onToggle(v) } catch (_: Throwable) {}
-        Profile.bump()  // outras partes do painel (intensidade, perfil) atualizam
+        Profile.bump()
     }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 40.dp)
-            .clip(RoundedCornerShape(7.dp))
+        Modifier.fillMaxWidth().heightIn(min = 28.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(if (v) Neon.cardHi else Neon.card)
             .border(1.dp,
                 if (v) Neon.accent.copy(alpha = 0.6f) else Neon.stroke.copy(alpha = 0.3f),
-                RoundedCornerShape(7.dp))
+                RoundedCornerShape(6.dp))
             .clickable { toggle() }
-            .padding(horizontal = 7.dp, vertical = 5.dp),
+            .padding(horizontal = 6.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Text(icon, fontSize = 13.sp)
+        Spacer(Modifier.width(6.dp))
+        Text(title, color = Color.White, fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f))
+        Box(Modifier.size(5.dp).clip(CircleShape).background(tier.color))
+        Spacer(Modifier.width(4.dp))
         Box(
-            Modifier.size(28.dp).clip(RoundedCornerShape(6.dp))
-                .background(if (v) Neon.accent else Color.Black.copy(alpha = 0.4f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(icon, fontSize = 13.sp)
-        }
-        Spacer(Modifier.width(7.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 10.sp,
-                fontWeight = FontWeight.Bold)
-            Text(subtitle, color = Neon.dim, fontSize = 8.sp)
-        }
-        Box(Modifier.size(6.dp).clip(CircleShape).background(tier.color))
-        Spacer(Modifier.width(5.dp))
-        Box(
-            Modifier.width(24.dp).height(12.dp).clip(RoundedCornerShape(6.dp))
+            Modifier.width(22.dp).height(11.dp).clip(RoundedCornerShape(5.5.dp))
                 .background(if (v) Neon.accent else Neon.dim.copy(alpha = 0.4f))
                 .padding(1.dp),
             contentAlignment = if (v) Alignment.CenterEnd else Alignment.CenterStart
         ) {
-            Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White))
+            Box(Modifier.size(9.dp).clip(CircleShape).background(Color.White))
         }
     }
 }
 
-/**
- * SliderCard com STEP. step=50 significa saltos de 50 em 50.
- * O Slider do Material3 precisa de `steps = n_intervalos_internos`,
- * calculado a partir do tamanho do range dividido pelo step.
- */
-@Composable private fun SliderCard(title: String, subtitle: String,
+/** SliderCard INLINE compacto: title + valor + slider na mesma linha, 28dp */
+@Composable private fun SliderCard(title: String,
+                                   @Suppress("UNUSED_PARAMETER") subtitle: String,
                                    range: ClosedFloatingPointRange<Float>,
                                    step: Float,
                                    value: Float, onChange: (Float) -> Unit) {
     var v by remember(value) { mutableStateOf(value) }
     val stepsCount = (((range.endInclusive - range.start) / step).toInt() - 1).coerceAtLeast(0)
-    Column(
-        Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(7.dp))
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 28.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(Neon.card)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(7.dp))
-            .padding(horizontal = 7.dp, vertical = 5.dp)
+            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold)
-                Text(subtitle, color = Neon.dim, fontSize = 8.sp)
-            }
-            Text(v.toInt().toString(), color = Neon.accent3, fontSize = 12.sp,
-                fontWeight = FontWeight.Black)
-        }
+        Text(title, color = Color.White, fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(72.dp))
         Slider(
             value = v, onValueChange = {
                 v = it; try { onChange(it) } catch (_: Throwable) {}
@@ -585,31 +573,36 @@ private enum class T(val color: Color) {
             },
             valueRange = range,
             steps = stepsCount,
-            modifier = Modifier.height(20.dp),
+            modifier = Modifier.weight(1f).height(20.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Neon.accent3,
                 activeTrackColor = Neon.accent,
                 inactiveTrackColor = Neon.dim.copy(alpha = 0.3f)
             )
         )
+        Spacer(Modifier.width(5.dp))
+        Text(v.toInt().toString(), color = Neon.accent3, fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.width(32.dp),
+            textAlign = TextAlign.End)
     }
 }
 
 @Composable private fun ActionCard(icon: String, title: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 36.dp)
-            .clip(RoundedCornerShape(8.dp))
+        Modifier.fillMaxWidth().heightIn(min = 26.dp)
+            .clip(RoundedCornerShape(6.dp))
             .background(Neon.card)
-            .border(1.dp, Neon.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            .border(1.dp, Neon.accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
             .clickable { try { onClick() } catch (_: Throwable) {} }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 7.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 14.sp)
-        Spacer(Modifier.width(10.dp))
-        Text(title, color = Neon.accent3, fontSize = 11.sp,
+        Text(icon, fontSize = 12.sp)
+        Spacer(Modifier.width(6.dp))
+        Text(title, color = Neon.accent3, fontSize = 10.sp,
             fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        Text("→", color = Neon.accent3, fontSize = 13.sp)
+        Text("→", color = Neon.accent3, fontSize = 11.sp)
     }
 }
 
