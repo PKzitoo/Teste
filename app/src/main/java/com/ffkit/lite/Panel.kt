@@ -38,7 +38,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     // OBSERVA refreshKey: quando Profile.apply() bumpar, tudo recompose
     val refresh = Profile.refreshKey.intValue
     Surface(
-        modifier = Modifier.width(300.dp),
+        modifier = Modifier.width(380.dp),   // mais largo, pros sliders respirarem
         color = Neon.bg,
         shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
@@ -167,6 +167,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 // ============ LEFT CARD (branding + perfil + status) ============
 
 @Composable private fun LeftCard(@Suppress("UNUSED_PARAMETER") refresh: Int) {
+    // observa refreshKey DIRETO aqui — garante recompose quando qualquer
+    // FCard bumpar, sem depender do Panel pai
+    @Suppress("UNUSED_VARIABLE")
+    val localRefresh = Profile.refreshKey.intValue
     val current = Profile.current()
     val intensity = Profile.intensity()
     Column(
@@ -547,7 +551,8 @@ private enum class T(val color: Color) {
     }
 }
 
-/** SliderCard INLINE compacto: title + valor + slider na mesma linha, 28dp */
+/** SliderCard: title + valor em linha, slider full width embaixo (altura usavel).
+ *  44dp total, thumb grande, facil de arrastar. */
 @Composable private fun SliderCard(title: String,
                                    @Suppress("UNUSED_PARAMETER") subtitle: String,
                                    range: ClosedFloatingPointRange<Float>,
@@ -555,17 +560,20 @@ private enum class T(val color: Color) {
                                    value: Float, onChange: (Float) -> Unit) {
     var v by remember(value) { mutableStateOf(value) }
     val stepsCount = (((range.endInclusive - range.start) / step).toInt() - 1).coerceAtLeast(0)
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 28.dp)
+    Column(
+        Modifier.fillMaxWidth().heightIn(min = 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Neon.card)
             .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        Text(title, color = Color.White, fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.width(72.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, color = Color.White, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f))
+            Text(v.toInt().toString(), color = Neon.accent3, fontSize = 13.sp,
+                fontWeight = FontWeight.Black)
+        }
         Slider(
             value = v, onValueChange = {
                 v = it; try { onChange(it) } catch (_: Throwable) {}
@@ -573,18 +581,13 @@ private enum class T(val color: Color) {
             },
             valueRange = range,
             steps = stepsCount,
-            modifier = Modifier.weight(1f).height(20.dp),
+            modifier = Modifier.fillMaxWidth().height(24.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Neon.accent3,
                 activeTrackColor = Neon.accent,
                 inactiveTrackColor = Neon.dim.copy(alpha = 0.3f)
             )
         )
-        Spacer(Modifier.width(5.dp))
-        Text(v.toInt().toString(), color = Neon.accent3, fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.width(32.dp),
-            textAlign = TextAlign.End)
     }
 }
 
