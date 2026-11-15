@@ -549,16 +549,21 @@ private enum class T(val color: Color) {
     }
 }
 
-/** SliderCard: FLUIDO (sem snap interno), mas valor exibido/armazenado
- *  arredondado pro step. Visualmente desliza suave, logicamente respeita steps. */
+/** SliderCard 100% FLUIDO: raw segue o dedo sem reset.
+ *  onChange eh chamado SO quando solta o dedo (onValueChangeFinished).
+ *  Numero exibido vai arredondando pro step enquanto arrasta. */
 @Composable private fun SliderCard(title: String,
                                    @Suppress("UNUSED_PARAMETER") subtitle: String,
                                    range: ClosedFloatingPointRange<Float>,
                                    step: Float,
                                    value: Float, onChange: (Float) -> Unit) {
-    // raw = valor cru enquanto arrasta (permite movimento suave)
-    // v   = valor snap-pro-step pra onChange + display
-    var raw by remember(value) { mutableStateOf(value) }
+    var raw by remember { mutableStateOf(value) }
+    // sincroniza raw com value APENAS quando Profile aplica preset
+    // (nao reseta durante drag normal)
+    val profileRefresh = Profile.refreshKey.intValue
+    androidx.compose.runtime.LaunchedEffect(profileRefresh) {
+        raw = value
+    }
     val v = (Math.round(raw / step) * step).toFloat().coerceIn(
         range.start, range.endInclusive)
     Row(
@@ -575,10 +580,13 @@ private enum class T(val color: Color) {
             modifier = Modifier.width(80.dp))
         Slider(
             value = raw,
-            onValueChange = { newRaw ->
-                raw = newRaw
-                val snapped = (Math.round(newRaw / step) * step).toFloat()
+            // onValueChange: APENAS atualiza raw -> thumb segue dedo fluido
+            onValueChange = { raw = it },
+            // onValueChangeFinished: so ao soltar o dedo, snap + emit + bump
+            onValueChangeFinished = {
+                val snapped = (Math.round(raw / step) * step).toFloat()
                     .coerceIn(range.start, range.endInclusive)
+                raw = snapped
                 try { onChange(snapped) } catch (_: Throwable) {}
                 Profile.bump()
             },
