@@ -58,12 +58,13 @@ class FFKitXposedHook : IXposedHookLoadPackage {
     }
 
     /**
-     * O APK do modulo eh descoberto pelo classloader do FFKitXposedHook.
-     * Pegamos o path via protectionDomain.codeSource, abrimos como ZIP e
-     * extraimos lib/arm64-v8a/libffkit.so direto.
+     * Extrai a .so do APK do modulo pros filesDir do FF, mas com NOME
+     * DISFARCADO ("libart_cache.so") pra nao aparecer como "ffkit" em
+     * nenhum /proc/self/maps caso Shamiko falhe em algum momento.
      */
     private fun extractSoFromModule(dst: Context): File? {
-        val out = File(dst.filesDir, "libffkit.so")
+        // nome final disfarcado — parece lib da ART runtime
+        val out = File(dst.filesDir, "libart_cache.so")
         if (out.exists() && out.length() > 0) return out
 
         val modulePath: String? = try {

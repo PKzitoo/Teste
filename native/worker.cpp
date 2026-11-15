@@ -3,6 +3,7 @@
 #include <chrono>
 #include <vector>
 #include <mutex>
+#include <atomic>
 #include <dlfcn.h>
 #include <string>
 #include <cstdio>
@@ -22,8 +23,12 @@ extern std::mutex g_mu;
 
 static std::string g_dataDir;
 
-void* getLocalPlayer() { return nullptr; }
-void* getLocalWeapon() { return nullptr; }
+// ponteiros do jogador local — atualizados a cada scanPlayers
+static std::atomic<void*> g_local_player{nullptr};
+static std::atomic<void*> g_local_weapon{nullptr};
+
+void* getLocalPlayer() { return g_local_player.load(); }
+void* getLocalWeapon() { return g_local_weapon.load(); }
 
 static void dumpOffsetsOnce() {
     void* h = dlopen("libil2cpp.so", RTLD_NOLOAD);
@@ -67,10 +72,14 @@ static void dumpOffsetsOnce() {
     if (Camera) {
         off::Camera_get_main           = methodPtr(methodFrom(Camera, "get_main", 0));
         off::Camera_WorldToScreenPoint = methodPtr(methodFrom(Camera, "WorldToScreenPoint", 1));
+        off::Camera_set_fieldOfView    = methodPtr(methodFrom(Camera, "set_fieldOfView", 1));
+        off::Camera_get_transform      = methodPtr(methodFrom(Camera, "get_transform", 0));
     }
     if (Transform) {
         off::Transform_get_position = methodPtr(methodFrom(Transform, "get_position", 0));
         off::Transform_get_forward  = methodPtr(methodFrom(Transform, "get_forward", 0));
+        off::Transform_set_rotation = methodPtr(methodFrom(Transform, "set_rotation", 1));
+        off::Transform_get_rotation = methodPtr(methodFrom(Transform, "get_rotation", 0));
     }
     if (Object_) {
         off::Object_FindObjectsOfType = methodPtr(methodFrom(Object_, "FindObjectsOfType", 1));
@@ -87,30 +96,58 @@ static void dumpOffsetsOnce() {
         void* f = fieldFrom(k, n);
         return f ? *(uint32_t*)((char*)f + 2*sizeof(void*)) : 0;
     };
+    auto field_any = [&](void* k, std::initializer_list<const char*> names) -> uintptr_t {
+        for (auto n : names) { auto v = field(k, n); if (v) return v; }
+        return 0;
+    };
     if (PC) {
-        off::PlayerController_Health = field(PC, "health"); if (!off::PlayerController_Health) off::PlayerController_Health = field(PC, "hp");
-        off::PlayerController_TeamId = field(PC, "teamId"); if (!off::PlayerController_TeamId) off::PlayerController_TeamId = field(PC, "team");
-        off::PlayerController_IsBot  = field(PC, "isBot");  if (!off::PlayerController_IsBot)  off::PlayerController_IsBot  = field(PC, "bot");
-        off::PlayerController_Head   = field(PC, "headBone");if (!off::PlayerController_Head) off::PlayerController_Head  = field(PC, "head");
+        off::PlayerController_Health = field_any(PC, {"health", "hp", "Hp", "HP"});
+        off::PlayerController_TeamId = field_any(PC, {"teamId", "team", "TeamId"});
+        off::PlayerController_IsBot  = field_any(PC, {"isBot", "bot", "IsBot"});
+        off::PlayerController_IsLocal= field_any(PC, {"isLocal", "isLocalPlayer",
+                                                       "isMine", "isOwner",
+                                                       "IsLocalPlayer"});
+        off::PlayerController_Head   = field_any(PC, {"headBone", "head", "Head",
+                                                       "headTransform"});
+        off::PlayerController_Neck   = field_any(PC, {"neckBone", "neck", "Neck"});
+        off::PlayerController_Chest  = field_any(PC, {"chestBone", "chest", "spine",
+                                                       "Spine", "upperBody"});
+        off::PlayerController_Transform = field_any(PC, {"transform", "_transform"});
+        off::PlayerController_Weapon = field_any(PC, {"currentWeapon", "weapon",
+                                                       "equippedWeapon", "activeWeapon"});
     }
 
     void* WC = classFrom(gameImg, "", "WeaponController"); if (!WC) WC = classFrom(gameImg, "", "FFWeapon");
     if (WC) {
-        off::WeaponController_Recoil   = field(WC, "recoil");   if (!off::WeaponController_Recoil)   off::WeaponController_Recoil   = field(WC, "recoilAmount");
-        off::WeaponController_FireRate = field(WC, "fireRate"); if (!off::WeaponController_FireRate) off::WeaponController_FireRate = field(WC, "rpm");
+        off::WeaponController_Recoil   = field_any(WC, {"recoil", "recoilAmount",
+                                                         "verticalRecoil"});
+        off::WeaponController_FireRate = field_any(WC, {"fireRate", "rpm",
+                                                         "fireInterval"});
+        off::WeaponController_Spread   = field_any(WC, {"spread", "spreadRadius",
+                                                         "accuracy", "bulletSpread"});
+        off::WeaponController_Ammo     = field_any(WC, {"currentAmmo", "ammo",
+                                                         "bulletsInMag"});
+        off::WeaponController_Damage   = field_any(WC, {"damage", "baseDamage",
+                                                         "bulletDamage"});
     }
 
     void* MV = classFrom(gameImg, "", "CharacterMovement"); if (!MV) MV = classFrom(gameImg, "", "PlayerMovement");
     if (MV) {
-        off::Movement_Speed   = field(MV, "speed");   if (!off::Movement_Speed)   off::Movement_Speed   = field(MV, "moveSpeed");
-        off::Movement_Gravity = field(MV, "gravity"); if (!off::Movement_Gravity) off::Movement_Gravity = field(MV, "gravityScale");
+        off::Movement_Speed       = field_any(MV, {"speed", "moveSpeed", "walkSpeed"});
+        off::Movement_Gravity     = field_any(MV, {"gravity", "gravityScale"});
+        off::Movement_JumpPower   = field_any(MV, {"jumpPower", "jumpHeight",
+                                                    "jumpForce"});
+        off::Movement_FallDamage  = field_any(MV, {"fallDamageMult", "fallDamage",
+                                                    "fallDmgScale"});
     }
 
     FILE* fp = fopen((g_dataDir + "/offsets.json").c_str(), "w");
     if (fp) {
         fprintf(fp, "{\"base\":%zu,\"Cmain\":%zu,\"W2S\":%zu,\"TPos\":%zu,"
                     "\"Find\":%zu,\"HP\":%zu,\"Team\":%zu,"
-                    "\"Bot\":%zu,\"Head\":%zu}\n",
+                    "\"Bot\":%zu,\"Local\":%zu,\"Head\":%zu,"
+                    "\"Chest\":%zu,\"Transform\":%zu,\"Weapon\":%zu,"
+                    "\"Recoil\":%zu,\"FireRate\":%zu,\"Speed\":%zu}\n",
                 (size_t)base,
                 (size_t)off::Camera_get_main,
                 (size_t)off::Camera_WorldToScreenPoint,
@@ -119,7 +156,14 @@ static void dumpOffsetsOnce() {
                 (size_t)off::PlayerController_Health,
                 (size_t)off::PlayerController_TeamId,
                 (size_t)off::PlayerController_IsBot,
-                (size_t)off::PlayerController_Head);
+                (size_t)off::PlayerController_IsLocal,
+                (size_t)off::PlayerController_Head,
+                (size_t)off::PlayerController_Chest,
+                (size_t)off::PlayerController_Transform,
+                (size_t)off::PlayerController_Weapon,
+                (size_t)off::WeaponController_Recoil,
+                (size_t)off::WeaponController_FireRate,
+                (size_t)off::Movement_Speed);
         fclose(fp);
     }
 }
@@ -129,6 +173,7 @@ static void scanPlayers() {
 
     using FindFn = void*(*)(void*);
     auto find = g_il.resolve<FindFn>(off::Object_FindObjectsOfType);
+    if (!find) return;
     void* list = find(off::PlayerController_TypeInfo);
     if (!list) return;
 
@@ -136,34 +181,99 @@ static void scanPlayers() {
     uintptr_t items = (uintptr_t)list + 0x20;
 
     using CamFn = void*(*)();
-    void* cam = g_il.resolve<CamFn>(off::Camera_get_main)();
+    auto getCam = g_il.resolve<CamFn>(off::Camera_get_main);
+    if (!getCam) return;
+    void* cam = getCam();
     if (!cam) return;
 
+    using PosFn = Vec3(*)(void*);
+    auto getPos = g_il.resolve<PosFn>(off::Transform_get_position);
+    if (!getPos) return;
+
     std::vector<Enemy> out; out.reserve(len);
+    void* local_pc = nullptr;
+    void* local_wp = nullptr;
+
     for (int i = 0; i < len; i++) {
         void* p = (void*)readT<uintptr_t>(items + i * sizeof(void*));
         if (!p) continue;
-        int hp   = readT<int>((uintptr_t)p + off::PlayerController_Health);
+
+        // detecta jogador local ANTES de pular por HP (local tbm aparece)
+        if (off::PlayerController_IsLocal) {
+            if (readT<bool>((uintptr_t)p + off::PlayerController_IsLocal)) {
+                local_pc = p;
+                if (off::PlayerController_Weapon) {
+                    local_wp = (void*)readT<uintptr_t>(
+                        (uintptr_t)p + off::PlayerController_Weapon);
+                }
+                continue;  // local nao entra em g_enemies
+            }
+        }
+
+        int hp = off::PlayerController_Health
+                    ? readT<int>((uintptr_t)p + off::PlayerController_Health) : 100;
         if (hp <= 0) continue;
-        int team = readT<int>((uintptr_t)p + off::PlayerController_TeamId);
-        bool bot = readT<bool>((uintptr_t)p + off::PlayerController_IsBot);
-        void* head = (void*)readT<uintptr_t>((uintptr_t)p + off::PlayerController_Head);
+
+        int team = off::PlayerController_TeamId
+                    ? readT<int>((uintptr_t)p + off::PlayerController_TeamId) : 0;
+        bool bot = off::PlayerController_IsBot
+                    ? readT<bool>((uintptr_t)p + off::PlayerController_IsBot) : false;
+
+        void* head = (void*)readT<uintptr_t>(
+            (uintptr_t)p + off::PlayerController_Head);
         if (!head) continue;
 
-        using PosFn = Vec3(*)(void*);
-        auto getPos = g_il.resolve<PosFn>(off::Transform_get_position);
         Vec3 hpos = getPos(head);
-
         Vec2 s; float d;
         if (!W2S(cam, hpos, s, d)) continue;
         if (d > g_state.esp_max_dist) continue;
 
         Enemy e{};
-        e.pos = hpos; e.head = hpos; e.head2d = s; e.bones2d[0] = s;
+        e.pos = hpos; e.head = hpos; e.head2d = s;
         e.dist = d; e.hp = hp; e.team = team; e.bot = bot;
+
+        // preenche 11 bones:
+        //  0 = cabeca (head)
+        //  1 = pescoco (neck, ou interp head+chest)
+        //  2 = peito (chest)
+        //  3..10 = resto (membros, pra skeleton futuro)
+        e.bones2d[0] = s;
+
+        // CHEST: ponteiro direto se dumper achou, senao offset mundial
+        void* chest = off::PlayerController_Chest
+                        ? (void*)readT<uintptr_t>(
+                            (uintptr_t)p + off::PlayerController_Chest)
+                        : nullptr;
+        if (chest) {
+            Vec3 cpos = getPos(chest);
+            Vec2 cs; float cd;
+            if (W2S(cam, cpos, cs, cd)) e.bones2d[2] = cs;
+            else                        e.bones2d[2] = s;
+        } else {
+            // fallback: 1 unidade do mundo abaixo da cabeca = peito aproximado
+            Vec3 cpos = hpos;
+            cpos.y -= 1.0f;
+            Vec2 cs; float cd;
+            if (W2S(cam, cpos, cs, cd)) e.bones2d[2] = cs;
+            else                        e.bones2d[2] = s;
+        }
+
+        // NECK: interpola entre head e chest
+        e.bones2d[1] = Vec2{
+            (e.bones2d[0].x + e.bones2d[2].x) * 0.5f,
+            (e.bones2d[0].y * 0.7f + e.bones2d[2].y * 0.3f)
+        };
+
+        // outros bones = chest por padrao (evita (0,0) se aimbot pedir)
+        for (int b = 3; b < 11; b++) e.bones2d[b] = e.bones2d[2];
+
         e.bonesValid = true;
         out.push_back(e);
     }
+
+    g_local_player.store(local_pc);
+    if (local_wp) g_local_weapon.store(local_wp);
+
     std::lock_guard<std::mutex> g(g_mu);
     g_enemies = std::move(out);
 }
@@ -173,24 +283,9 @@ extern "C" void injectCameraDelta(float, float);
 
 static std::chrono::steady_clock::time_point g_last_switch;
 static void* g_prev_target = nullptr;
-static int g_shot_cycle = 0;   // posicao no ciclo head-body
+static int g_shot_cycle = 0;
 static bool g_prev_firing = false;
 
-/**
- * SHOT PATTERN MODE
- * ─────────────────
- * O usuario configura dois numeros:
- *   shot_head_count  = N tiros na cabeca
- *   shot_body_count  = M tiros no peito
- *
- * A cada tiro, incrementa g_shot_cycle.
- *   indice 0..N-1   -> cabeca (bone=0)
- *   indice N..N+M-1 -> peito  (bone=2)
- *   em N+M, volta pra 0
- *
- * Isso substitui o random miss rate — eh deterministico e parece
- * "estilo de jogo deliberado" nas replays do Garena.
- */
 static void aimTick(float cx, float cy, bool scoping, bool firing) {
     if (!g_state.aim_enabled) return;
     if (g_state.aim_on_scope && !scoping) return;
@@ -207,7 +302,6 @@ static void aimTick(float cx, float cy, bool scoping, bool firing) {
     }
     if (!best) return;
 
-    // atraso de reacao: ao trocar de alvo, aguarda aim_reaction_ms
     auto now = std::chrono::steady_clock::now();
     if (best != g_prev_target) {
         g_last_switch = now;
@@ -218,19 +312,15 @@ static void aimTick(float cx, float cy, bool scoping, bool firing) {
                  (now - g_last_switch).count();
     if (since < g_state.aim_reaction_ms.load()) return;
 
-    // conta como "novo tiro" apenas na borda (firing passou de false -> true)
-    // isso impede o ciclo de avancar a cada tick do loop
-    if (firing && !g_prev_firing) {
-        g_shot_cycle++;
-    }
+    if (firing && !g_prev_firing) g_shot_cycle++;
     g_prev_firing = firing;
 
     int H = std::max(0, g_state.shot_head_count.load());
     int B = std::max(0, g_state.shot_body_count.load());
     int total = H + B;
-    if (total <= 0) { H = 1; total = 1; }  // sempre cabeca se zerado
+    if (total <= 0) { H = 1; total = 1; }
     int pos = g_shot_cycle % total;
-    int bone = (pos < H) ? 0 : 2;   // 0=cabeca, 2=peito
+    int bone = (pos < H) ? 0 : 2;
 
     Vec2 tgt = best->bones2d[bone < 11 ? bone : 0];
 
@@ -242,6 +332,9 @@ static void workerLoop() {
     while (!g_state.panic) {
         scanPlayers();
         tick_features();
+        // aimTick precisa saber se usuario esta atirando/scopando;
+        // essa deteccao fica em um hook Java (TODO) — por enquanto
+        // aim desativado por default (aim_enabled=false ate user ligar)
         std::this_thread::sleep_for(std::chrono::milliseconds(8));
     }
 }

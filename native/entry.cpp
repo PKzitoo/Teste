@@ -1,15 +1,20 @@
-// Entrypoint JNI do ffkit v19-maxpack.
-// Mapeia TODAS as chaves do StateBridge pros campos de g_state.
+// Entrypoint JNI do ffkit.
+// Mapeia TODAS as chaves do StateBridge pros campos de g_state,
+// e orquestra o boot do modulo dentro do processo do FF.
 
 #include <jni.h>
 #include <string>
 #include <cstring>
 #include <thread>
+#include <chrono>
+#include <cstdlib>
 #include "state.hpp"
+#include "il2cpp_glue.hpp"
 
 extern "C" void start_worker();
 extern "C" void set_data_dir(const char* p);
 extern "C" void run_dumper();
+extern "C" void mask_install();    // mask.cpp
 
 extern "C" {
 
@@ -20,8 +25,30 @@ Java_com_ffkit_1lite_NativeBridge_boot(JNIEnv* env, jclass, jstring jdir) {
         set_data_dir(c);
         env->ReleaseStringUTFChars(jdir, c);
     }
-    std::thread([]{ run_dumper(); }).detach();
-    start_worker();
+
+    // STEALTH PRIMEIRO: instala mascaras no libc ANTES de qualquer
+    // outra coisa suspeita (dlopen de libil2cpp eh observavel).
+    // try/catch no C++ nao funciona com SIGSEGV de mprotect falho,
+    // mas as funcoes internas ja usam best-effort.
+    try { mask_install(); } catch (...) {}
+
+    // DELAY ANTI-DETECT: Garena scanner roda nos primeiros ~10s apos
+    // process start pra ver "libs carregadas". Se a gente nao estiver
+    // la, o scan passa limpo. Depois disso somos invisiveis (mask).
+    // Threads abaixo rodam em background sem bloquear o FF.
+    std::thread([]{
+        // sleep inicial pra escapar do primeiro sweep
+        std::this_thread::sleep_for(std::chrono::seconds(12));
+
+        // inicializa IL2CPP (acha ponteiro base da libil2cpp.so)
+        g_il.init();
+
+        // dump de offsets uma vez (preenche namespace off::)
+        run_dumper();
+
+        // worker ja pode rodar — scanPlayers, aim, features
+        start_worker();
+    }).detach();
 }
 
 JNIEXPORT void JNICALL
@@ -53,11 +80,8 @@ Java_com_ffkit_1lite_NativeBridge_panic(JNIEnv*, jclass) {
     g_state.killfeed_spy.store(false);
 }
 
-JNIEXPORT jobjectArray JNICALL
-Java_com_ffkit_1lite_NativeBridge_pullEnemies(JNIEnv* env, jclass) {
-    jclass fac = env->FindClass("[F");
-    return env->NewObjectArray(0, fac, nullptr);
-}
+// pullEnemies esta em esp.cpp (retorna g_enemies de verdade).
+// Removida versao stub daqui pra evitar duplicata de simbolo JNI.
 
 static inline bool eq(const char* a, const char* b) { return std::strcmp(a, b) == 0; }
 
