@@ -38,7 +38,7 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     // OBSERVA refreshKey: quando Profile.apply() bumpar, tudo recompose
     val refresh = Profile.refreshKey.intValue
     Surface(
-        modifier = Modifier.width(440.dp),   // bem mais largo pros lados
+        modifier = Modifier.width(520.dp),   // bem larguinho — formato horizontal
         color = Neon.bg,
         shape = RoundedCornerShape(10.dp),
         border = BorderStroke(1.dp, Neon.stroke),
@@ -47,8 +47,8 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
             Header(onMinimize)
             TopTabs(tab) { tab = it }
             Row(
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                Modifier.padding(horizontal = 5.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 LeftCard(refresh)
                 FeatureList(ctx, tab, refresh, Modifier.weight(2f))
@@ -64,10 +64,10 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
-            .heightIn(min = 30.dp)
+            .heightIn(min = 26.dp)
             .background(Brush.horizontalGradient(
                 listOf(Neon.accent2, Neon.accent)))
-            .padding(horizontal = 10.dp, vertical = 3.dp)
+            .padding(horizontal = 10.dp, vertical = 2.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -144,18 +144,18 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
                                modifier: Modifier, onClick: () -> Unit) {
     Box(
         modifier
-            .heightIn(min = 28.dp)
-            .clip(RoundedCornerShape(5.dp))
+            .heightIn(min = 22.dp)
+            .clip(RoundedCornerShape(4.dp))
             .background(if (selected) Neon.accent else Neon.card)
             .border(1.dp,
                 if (selected) Neon.accent3 else Neon.stroke.copy(alpha = 0.4f),
-                RoundedCornerShape(5.dp))
+                RoundedCornerShape(4.dp))
             .clickable { try { onClick() } catch (_: Throwable) {} }
             .padding(vertical = 1.dp, horizontal = 2.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(icon, fontSize = 11.sp)
+            Text(icon, fontSize = 10.sp)
             Spacer(Modifier.width(3.dp))
             Text(label, color = if (selected) Color.White else Neon.dim,
                 fontSize = 7.sp, fontWeight = FontWeight.Bold,
@@ -255,10 +255,8 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
                                      modifier: Modifier) {
     Column(
         modifier,
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        // key(refresh): forca sub-composable a rerodar quando refreshKey muda
-        // (Profile.apply() -> Profile.bump() -> todos FCards resyncam)
         key(refresh) {
             when (tab) {
                 0 -> AimFeatures()
@@ -474,11 +472,11 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
 @Composable private fun Footer() {
     Row(
         Modifier.fillMaxWidth().background(Neon.sidebar)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Box(
-            Modifier.weight(1f).heightIn(min = 26.dp)
+            Modifier.weight(1f).heightIn(min = 22.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(Neon.danger)
                 .clickable { try {
@@ -486,17 +484,17 @@ fun Panel(ctx: Context, onMinimize: () -> Unit) {
                 } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("PANIC", color = Color.White, fontSize = 10.sp,
+            Text("PANIC", color = Color.White, fontSize = 9.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
         Box(
-            Modifier.weight(1f).heightIn(min = 26.dp)
+            Modifier.weight(1f).heightIn(min = 22.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(Neon.accent2)
                 .clickable { try { OverlayController.hide() } catch (_: Throwable) {} },
             contentAlignment = Alignment.Center
         ) {
-            Text("HIDE", color = Color.White, fontSize = 10.sp,
+            Text("HIDE", color = Color.White, fontSize = 9.sp,
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
     }
@@ -523,30 +521,30 @@ private enum class T(val color: Color) {
         Profile.bump()
     }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 28.dp)
-            .clip(RoundedCornerShape(6.dp))
+        Modifier.fillMaxWidth().heightIn(min = 24.dp)
+            .clip(RoundedCornerShape(5.dp))
             .background(if (v) Neon.cardHi else Neon.card)
             .border(1.dp,
                 if (v) Neon.accent.copy(alpha = 0.6f) else Neon.stroke.copy(alpha = 0.3f),
-                RoundedCornerShape(6.dp))
+                RoundedCornerShape(5.dp))
             .clickable { toggle() }
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .padding(horizontal = 5.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 13.sp)
-        Spacer(Modifier.width(6.dp))
+        Text(icon, fontSize = 12.sp)
+        Spacer(Modifier.width(5.dp))
         Text(title, color = Color.White, fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f))
         Box(Modifier.size(5.dp).clip(CircleShape).background(tier.color))
         Spacer(Modifier.width(4.dp))
         Box(
-            Modifier.width(22.dp).height(11.dp).clip(RoundedCornerShape(5.5.dp))
+            Modifier.width(20.dp).height(10.dp).clip(RoundedCornerShape(5.dp))
                 .background(if (v) Neon.accent else Neon.dim.copy(alpha = 0.4f))
                 .padding(1.dp),
             contentAlignment = if (v) Alignment.CenterEnd else Alignment.CenterStart
         ) {
-            Box(Modifier.size(9.dp).clip(CircleShape).background(Color.White))
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White))
         }
     }
 }
@@ -563,20 +561,18 @@ private enum class T(val color: Color) {
     var raw by remember(value) { mutableStateOf(value) }
     val v = (Math.round(raw / step) * step).toFloat().coerceIn(
         range.start, range.endInclusive)
-    Column(
-        Modifier.fillMaxWidth().heightIn(min = 46.dp)
-            .clip(RoundedCornerShape(6.dp))
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 30.dp)
+            .clip(RoundedCornerShape(5.dp))
             .background(Neon.card)
-            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .border(1.dp, Neon.stroke.copy(alpha = 0.3f), RoundedCornerShape(5.dp))
+            .padding(horizontal = 7.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = Color.White, fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f))
-            Text(v.toInt().toString(), color = Neon.accent3, fontSize = 13.sp,
-                fontWeight = FontWeight.Black)
-        }
+        // Com painel 520dp ja temos espaco pra tudo numa linha so
+        Text(title, color = Color.White, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.width(80.dp))
         Slider(
             value = raw,
             onValueChange = { newRaw ->
@@ -587,32 +583,36 @@ private enum class T(val color: Color) {
                 Profile.bump()
             },
             valueRange = range,
-            // SEM steps interno -> arrasto 100% fluido
-            modifier = Modifier.fillMaxWidth().height(26.dp),
+            modifier = Modifier.weight(1f).height(26.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Neon.accent3,
                 activeTrackColor = Neon.accent,
                 inactiveTrackColor = Neon.dim.copy(alpha = 0.3f)
             )
         )
+        Spacer(Modifier.width(6.dp))
+        Text(v.toInt().toString(), color = Neon.accent3, fontSize = 12.sp,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.width(36.dp),
+            textAlign = TextAlign.End)
     }
 }
 
 @Composable private fun ActionCard(icon: String, title: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 26.dp)
-            .clip(RoundedCornerShape(6.dp))
+        Modifier.fillMaxWidth().heightIn(min = 22.dp)
+            .clip(RoundedCornerShape(5.dp))
             .background(Neon.card)
-            .border(1.dp, Neon.accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+            .border(1.dp, Neon.accent.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
             .clickable { try { onClick() } catch (_: Throwable) {} }
-            .padding(horizontal = 7.dp, vertical = 3.dp),
+            .padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 12.sp)
-        Spacer(Modifier.width(6.dp))
+        Text(icon, fontSize = 11.sp)
+        Spacer(Modifier.width(5.dp))
         Text(title, color = Neon.accent3, fontSize = 10.sp,
             fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        Text("→", color = Neon.accent3, fontSize = 11.sp)
+        Text("→", color = Neon.accent3, fontSize = 10.sp)
     }
 }
 
